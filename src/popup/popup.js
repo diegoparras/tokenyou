@@ -1,6 +1,16 @@
 // @ts-check
 import { getAllAdapters } from '../adapters/index.js';
+import { worstPct } from '../lib/quota.js';
 import { getHiddenMeters, toggleHiddenMeter } from '../lib/prefs.js';
+
+/** Color de identidad por plataforma (punto de la card). */
+const PLATFORM_COLORS = {
+  claude: '#D97757',
+  chatgpt: '#10A37F',
+  gemini: '#4E8CF9',
+  grok: '#8A93A6',
+  perplexity: '#26B8CE',
+};
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
   chrome.i18n.getMessage(key, args) || key;
@@ -73,6 +83,26 @@ async function render() {
     .map((s) => s?.fetchedAt ?? 0)
     .reduce((a, b) => Math.max(a, b), 0);
   $updated.textContent = newest ? agoLabel(newest) : '';
+
+  renderOverall(worstPct(Object.values(stored), hidden));
+}
+
+/** Anillo de estado global en el header: el peor medidor visible. @param {number|null} worst */
+function renderOverall(worst) {
+  const svg = /** @type {SVGElement} */ (/** @type {unknown} */ (document.getElementById('overall')));
+  const arc = /** @type {SVGCircleElement} */ (/** @type {unknown} */ (document.getElementById('overall-arc')));
+  const text = /** @type {SVGTextElement} */ (/** @type {unknown} */ (document.getElementById('overall-text')));
+  if (!svg || !arc || !text) return;
+  if (worst === null) {
+    svg.setAttribute('hidden', '');
+    return;
+  }
+  svg.removeAttribute('hidden');
+  const C = 2 * Math.PI * 15;
+  arc.style.strokeDasharray = `${(Math.min(100, worst) / 100) * C} ${C}`;
+  const cls = worst >= 85 ? 'crit' : worst >= 60 ? 'warn' : 'ok';
+  svg.setAttribute('data-level', cls);
+  text.textContent = `${worst}`;
 }
 
 /**
@@ -83,8 +113,11 @@ async function render() {
 function card(adapter, snap, hidden) {
   const art = el('article', 'card');
   const isEditing = editing.has(adapter.id);
+  const color = PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (adapter.id)] ?? '#7B8A96';
+  art.style.setProperty('--pcolor', color);
 
   const head = el('div', 'card-head');
+  head.append(el('span', 'pdot'));
   head.append(el('span', 'pname', adapter.name));
   if (snap?.plan) head.append(el('span', 'chip', snap.plan));
   if (snap?.approx) head.append(el('span', 'chip', t('approxChip')));

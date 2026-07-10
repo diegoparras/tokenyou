@@ -38,6 +38,7 @@ body {
   color: var(--ink);
   font: 13px/1.5 system-ui, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  border-top: 2px solid var(--accent);
 }
 
 header {
@@ -51,6 +52,20 @@ header {
 h1 { font-size: 15px; margin: 0; letter-spacing: -0.01em; }
 .head-right { display: flex; align-items: center; gap: 8px; }
 .updated { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+
+.overall { width: 30px; height: 30px; }
+.overall .ring-track { stroke: var(--track); }
+.overall .ring-fill { transition: stroke-dasharray 0.6s ease; }
+.overall[data-level="ok"] .ring-fill { stroke: var(--ok); }
+.overall[data-level="warn"] .ring-fill { stroke: var(--warn); }
+.overall[data-level="crit"] .ring-fill { stroke: var(--crit); }
+.overall text {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) { .overall .ring-fill { transition: none; } }
 
 .icon-btn {
   display: grid;
@@ -79,14 +94,23 @@ main { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px; }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
+  transition: border-color 0.15s ease;
 }
+.card:hover { border-color: color-mix(in srgb, var(--pcolor, var(--accent)) 45%, var(--line)); }
 .card-head {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+}
+.pdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pcolor, var(--accent));
+  flex: none;
 }
 .pname { font-weight: 650; font-size: 13.5px; }
 .chip {
@@ -128,12 +152,26 @@ main { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px; }
   color: var(--ink);
 }
 .track {
-  height: 6px;
-  border-radius: 3px;
+  position: relative;
+  height: 7px;
+  border-radius: 4px;
   background: var(--track);
   overflow: hidden;
 }
-.fill { height: 100%; border-radius: 3px; background: var(--ok); transition: width 0.5s ease; }
+/* Marcas de umbral (60% ámbar, 85% rojo) sobre la pista */
+.track::before,
+.track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--bg);
+  z-index: 1;
+}
+.track::before { left: 60%; }
+.track::after { left: 85%; }
+.fill { height: 100%; border-radius: 4px; background: var(--ok); transition: width 0.5s ease; }
 .fill.warn { background: var(--warn); }
 .fill.crit { background: var(--crit); }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
