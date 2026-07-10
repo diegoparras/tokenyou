@@ -1,0 +1,14 @@
+{
+  "name": "tokenyou",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dev tooling only — the extension itself has zero dependencies and no build step.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "pack": "git archive --format=zip -o dist/tokenyou.zip HEAD manifest.json src icons _locales LICENSE"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.323",
+    "typescript": "^5.8.0"
+  }
+}
