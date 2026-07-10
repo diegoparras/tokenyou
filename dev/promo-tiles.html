@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TokenYou — promo tiles</title>
+<style>
+  :root {
+    --bg:#0B131C; --bg2:#0E1620; --surface:#141F2B; --surface2:#1B2836;
+    --ink:#E8EEF3; --ink2:#A8B8C4; --ink3:#6E8090; --line:#243442;
+    --accent:#2DD4BF; --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171; --track:#23313F;
+    --mono:"Cascadia Code","SF Mono",ui-monospace,Consolas,monospace;
+    --sans:system-ui,"Segoe UI",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--sans); background:#333; }
+  body.solo { background:transparent; }
+  body.solo .tile { margin:0 !important; display:none; }
+  body.solo .tile.show { display:flex; }
+  .tile { margin:24px; overflow:hidden; position:relative; color:var(--ink);
+    background:radial-gradient(700px 460px at 82% -20%, #12312c 0%, var(--bg) 58%); }
+  .glow { position:absolute; border-radius:50%; background:radial-gradient(circle, color-mix(in srgb,var(--accent) 30%,transparent), transparent 70%); filter:blur(18px); pointer-events:none; }
+
+  .brand { display:flex; align-items:center; gap:10px; font-weight:750; letter-spacing:-.01em; }
+  .brand svg { color:var(--accent); }
+  .eyebrow { font-family:var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+  .chip { font-family:var(--mono); color:var(--ink2); border:1px solid var(--line); border-radius:20px; display:inline-flex; align-items:center; gap:8px; }
+  .chip b { color:var(--accent); }
+  h1 { margin:0; letter-spacing:-.03em; font-weight:800; line-height:1.04; }
+  h1 em { font-style:normal; color:var(--accent); }
+  .subs { color:var(--ink3); font-family:var(--mono); }
+
+  /* ---- SMALL 440x280 ---- */
+  .tile.small { width:440px; height:280px; flex-direction:column; justify-content:space-between; padding:30px 32px; }
+  .tile.small .glow { width:320px; height:320px; right:-120px; top:-140px; }
+  .tile.small .brand { font-size:26px; }
+  .tile.small .brand svg { width:30px; height:30px; }
+  .tile.small h1 { font-size:29px; margin-top:2px; }
+  .tile.small .subs { font-size:12.5px; margin-top:12px; letter-spacing:.02em; }
+  .tile.small .chip { font-size:11px; padding:5px 12px; }
+
+  /* ---- MARQUEE 1400x560 ---- */
+  .tile.marquee { width:1400px; height:560px; align-items:center; gap:70px; padding:0 90px; }
+  .tile.marquee .glow { width:620px; height:620px; right:-120px; top:-120px; }
+  .tile.marquee .copy { flex:1; max-width:640px; position:relative; z-index:2; }
+  .tile.marquee .eyebrow { font-size:17px; margin-bottom:20px; }
+  .tile.marquee .brand { font-size:40px; margin-bottom:18px; }
+  .tile.marquee .brand svg { width:44px; height:44px; }
+  .tile.marquee h1 { font-size:52px; }
+  .tile.marquee .subs { font-size:17px; margin-top:22px; }
+  .tile.marquee .chip { font-size:14px; padding:8px 16px; margin-top:24px; }
+  .tile.marquee .stage { flex:none; position:relative; z-index:2; }
+
+  /* popup mock */
+  .mock { width:340px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:4px 0 12px; font-size:13px; }
+  .mh { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 9px; }
+  .mbr { display:flex; align-items:center; gap:7px; font-weight:750; font-size:14px; }
+  .mbr svg { width:18px; height:18px; color:var(--accent); }
+  .ring { width:30px; height:30px; }
+  .ring circle { fill:none; stroke-width:5; }
+  .rt { stroke:var(--track); } .rf { stroke:var(--crit); stroke-linecap:round; }
+  .ring text { font-family:var(--mono); font-size:12px; font-weight:600; fill:var(--ink); text-anchor:middle; }
+  .c { background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:8px 12px; padding:11px 13px; }
+  .chd { display:flex; align-items:center; gap:7px; margin-bottom:9px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .nm { font-weight:650; font-size:13px; } .mchip { font-family:var(--mono); font-size:9px; background:var(--surface2); color:var(--ink2); border-radius:20px; padding:1.5px 7px; }
+  .m { margin-bottom:9px; } .m:last-child { margin-bottom:0; }
+  .mr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+  .ml { font-size:11.5px; color:var(--ink2); } .mv { font-family:var(--mono); font-size:11.5px; font-weight:600; color:var(--ink); }
+  .trk { position:relative; height:6px; border-radius:4px; background:var(--track); overflow:hidden; }
+  .trk::before,.trk::after { content:""; position:absolute; top:1px; bottom:1px; width:1px; background:var(--bg2); opacity:.55; }
+  .trk::before { left:60%; } .trk::after { left:85%; }
+  .fl { height:100%; border-radius:4px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .fl.ok { background-color:var(--ok); } .fl.warn { background-color:var(--warn); } .fl.crit { background-color:var(--crit); }
+  .rsx { font-family:var(--mono); font-size:9.5px; color:var(--ink3); margin-top:3px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs><g id="batt"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></g></defs></svg>
+
+<!-- SMALL 440x280 -->
+<div class="tile small" id="small">
+  <div class="glow"></div>
+  <div>
+    <div class="brand"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</div>
+    <h1 data-i="tagline">All your AI limits, <em data-i="tagend">in one place</em></h1>
+  </div>
+  <div>
+    <div class="subs">Claude · ChatGPT · Gemini · Grok · Perplexity</div>
+    <div class="chip" style="margin-top:14px"><b>●</b><span data-i="chip">Open source · MIT · Zero telemetry</span></div>
+  </div>
+</div>
+
+<!-- MARQUEE 1400x560 -->
+<div class="tile marquee" id="marquee">
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="eyebrow" data-i="eyebrow">Chrome extension · Open source · MIT</div>
+    <div class="brand"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</div>
+    <h1 data-i="tagline2">All your AI limits, <em data-i="tagend2">in one place</em></h1>
+    <div class="subs" data-i="subs2">How much you've used, when it resets — without ever reading your conversations.</div>
+    <div class="chip"><b>●</b><span data-i="chip2">No code on your pages · Zero telemetry · Verifiable build</span></div>
+  </div>
+  <div class="stage">
+    <div class="mock">
+      <div class="mh"><span class="mbr"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</span>
+        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="84.8 94.2"/><text x="18" y="21.5">90</text></svg></div>
+      <div class="c" style="--pc:#D97757"><div class="chd"><span class="dot"></span><span class="nm">Claude</span><span class="mchip">Max 20x</span></div>
+        <div class="m"><div class="mr"><span class="ml" data-i="l_session">Session (5 h)</span><span class="mv">33%</span></div><div class="trk"><div class="fl ok" style="width:33%"></div></div><div class="rsx" data-i="r1">resets in 2 h 05 m</div></div>
+        <div class="m"><div class="mr"><span class="ml" data-i="l_week">Week · Fable</span><span class="mv">64%</span></div><div class="trk"><div class="fl warn" style="width:64%"></div></div><div class="rsx" data-i="r2">resets in 3 d 0 h</div></div></div>
+      <div class="c" style="--pc:#8A93A6"><div class="chd"><span class="dot"></span><span class="nm">Grok</span></div>
+        <div class="m"><div class="mr"><span class="ml" data-i="l_win">4 h window</span><span class="mv">90%</span></div><div class="trk"><div class="fl crit" style="width:90%"></div></div><div class="rsx" data-i="r3">1 of 10 left</div></div></div>
+      <div class="c" style="--pc:#4E8CF9"><div class="chd"><span class="dot"></span><span class="nm">Gemini</span></div>
+        <div class="m"><div class="mr"><span class="ml" data-i="l_wk">Weekly</span><span class="mv">1%</span></div><div class="trk"><div class="fl ok" style="width:1%"></div></div><div class="rsx" data-i="r4">resets in 4 d 5 h</div></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ES = {
+    tagline: 'Todos tus límites de IA,', tagend: 'en un solo lugar',
+    chip: 'Open source · MIT · Cero telemetría',
+    eyebrow: 'Extensión de Chrome · Open source · MIT',
+    tagline2: 'Todos tus límites de IA,', tagend2: 'en un solo lugar',
+    subs2: 'Cuánto usaste, cuándo se reinicia — sin leer jamás tus conversaciones.',
+    chip2: 'Sin código en tus páginas · Cero telemetría · Build verificable',
+    l_session: 'Sesión (5 h)', r1: 'reinicia en 2 h 05 m',
+    l_week: 'Semana · Fable', r2: 'reinicia en 3 d 0 h',
+    l_win: 'Ventana de 4 h', r3: 'quedan 1 de 10',
+    l_wk: 'Semanal', r4: 'reinicia en 4 d 5 h'
+  };
+  const params = new URLSearchParams(location.search);
+  if (params.get('lang') === 'es') {
+    document.documentElement.lang = 'es';
+    for (const el of document.querySelectorAll('[data-i]')) {
+      const k = el.dataset.i; if (ES[k] !== undefined) el.textContent = ES[k];
+    }
+  }
+  const t = params.get('t');
+  if (t) {
+    document.body.classList.add('solo');
+    const el = document.getElementById(t);
+    if (el) el.classList.add('show');
+  }
+</script>
+</body>
+</html>
