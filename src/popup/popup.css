@@ -167,7 +167,17 @@ main { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pcolor, var(--accent)) 18%, transparent);
   flex: none;
 }
+.pname-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pname { font-weight: 650; font-size: 13.5px; letter-spacing: -0.01em; }
+.paccount {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .chip {
   font-family: var(--mono);
   font-size: 9.5px;

@@ -130,7 +130,14 @@ function card(adapter, snap, hidden) {
 
   const head = el('div', 'card-head');
   head.append(el('span', 'pdot'));
-  head.append(el('span', 'pname', adapter.name));
+  const nameCol = el('div', 'pname-col');
+  nameCol.append(el('span', 'pname', adapter.name));
+  if (snap?.account) {
+    const acc = el('span', 'paccount', snap.account);
+    acc.title = snap.account;
+    nameCol.append(acc);
+  }
+  head.append(nameCol);
   if (snap?.plan) head.append(el('span', 'chip', snap.plan));
   if (snap?.approx) head.append(el('span', 'chip', t('approxChip')));
   head.append(el('span', 'spacer'));

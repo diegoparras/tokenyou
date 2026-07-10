@@ -28,6 +28,7 @@
       platformId: 'chatgpt',
       ok: true,
       plan: 'Plus',
+      account: 'diegoparras@gmail.com',
       meters: [
         { id: 'primary', label: 'Ventana de 5 h', usedPct: 11, resetsAt: now + 4 * H },
         { id: 'secondary', label: 'Semanal', usedPct: 2, resetsAt: now + 6.9 * 24 * H },

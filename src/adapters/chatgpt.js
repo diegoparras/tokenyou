@@ -51,6 +51,7 @@ export const chatgpt = {
       platformId: 'chatgpt',
       ok: true,
       plan: prettyPlan(usage?.plan_type),
+      account: typeof usage?.email === 'string' ? usage.email : undefined,
       meters,
       fetchedAt: Date.now(),
     };
