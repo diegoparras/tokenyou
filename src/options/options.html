@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+        <rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/>
+        <rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/>
+      </svg>
+      <h1 id="title"></h1>
+    </header>
+
+    <p id="intro" class="intro"></p>
+    <div class="security-note" id="security-note"></div>
+
+    <div class="toolbar">
+      <button id="template-btn" class="btn ghost"></button>
+      <span class="spacer"></span>
+      <button id="test-btn" class="btn ghost"></button>
+      <button id="save-btn" class="btn primary"></button>
+    </div>
+
+    <textarea id="editor" spellcheck="false"></textarea>
+
+    <pre id="result" hidden></pre>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

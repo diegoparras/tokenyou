@@ -37,6 +37,18 @@ Either way, the invariant that never changes: **there is no exfiltration path**.
 | Perplexity | Remaining Pro / Research / Labs / Agentic searches | `GET /rest/rate-limit/all` |
 | Gemini (gemini.google.com) | Prompts sent in the last 5 h / 7 days (local count) | Send-counter content script — no quota endpoint exists |
 
+Claude also shows your **extra usage** spending (monthly overage credits, e.g. `$21.84 / $100.00`) when it's enabled on your plan.
+
+### Custom services (advanced)
+
+Options page → define additional services as JSON: an origin, a usage URL on that host, and meters mapped with dot-paths into the JSON response (`pctPath`, or `usedPath`/`remainingPath` + `totalPath`, plus optional `resetPath`). A Cursor template ships as a starting point (community-verified — its endpoint shape may need adjusting; use the Test button, which requests the permission and shows exactly what was read).
+
+Custom services follow the same rules as built-ins: https only, endpoint host must match the granted origin, enabled per-site from the popup, revocable anytime. To make user-defined origins grantable at runtime, the manifest declares `https://*/*` under `optional_host_permissions` — this grants **nothing** by itself; every origin still requires an explicit per-site permission dialog.
+
+### Hiding meters
+
+Each platform card has a gear: toggle any meter (a model you don't use, a search type you don't care about) off. Hidden meters are excluded from the toolbar badge.
+
 Gemini is the one platform without a usage endpoint, so TokenYou counts your sends locally: a page-world script watches for the app's own send request (`StreamGenerate`) and emits an **empty signal** — it never reads the request, your prompt, or the response. A bridge script records only a timestamp and the visible model name to local storage. That's the entire data flow, and it only exists if you enable Gemini (which is also when the optional `scripting` permission is requested). The card is marked "local count" because it can't see usage from other devices.
 
 The other four are the platforms' own internal endpoints — the same data their web apps display. They are undocumented and can change; each adapter is isolated, so a breaking change degrades that one platform to "unavailable" while the rest keep working.

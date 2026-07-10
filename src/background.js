@@ -1,6 +1,7 @@
 // @ts-check
-import { adapters } from './adapters/index.js';
+import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
+import { getHiddenMeters } from './lib/prefs.js';
 
 const ALARM = 'tokenyou-refresh';
 const REFRESH_MINUTES = 5;
@@ -22,9 +23,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 });
 
-/** Adaptadores cuyo host permission fue concedido por el usuario. */
+/** Adaptadores (nativos + personalizados) cuyo host permission fue concedido. */
 async function enabledAdapters() {
-  const granted = await chrome.permissions.getAll();
+  const [granted, adapters] = await Promise.all([chrome.permissions.getAll(), getAllAdapters()]);
   const origins = granted.origins ?? [];
   return adapters.filter((a) => origins.includes(a.origin));
 }
@@ -53,6 +54,7 @@ async function syncContentScripts() {
   const registered = await chrome.scripting.getRegisteredContentScripts();
   const registeredIds = new Set(registered.map((s) => s.id));
 
+  const adapters = await getAllAdapters();
   for (const adapter of adapters) {
     const scripts = /** @type {chrome.scripting.RegisteredContentScript[]|undefined} */ (
       /** @type {any} */ (adapter).contentScripts
@@ -72,7 +74,7 @@ async function refreshAll() {
   await updateBadge();
 }
 
-/** @param {(typeof adapters)[number]} adapter */
+/** @param {import('./adapters/index.js').Adapter} adapter */
 async function refreshOne(adapter) {
   /** @type {import('./lib/quota.js').Snapshot} */
   let snap;
@@ -96,7 +98,7 @@ async function refreshOne(adapter) {
 
 /** Borra snapshots de plataformas cuyo permiso se revocó. */
 async function pruneRevoked() {
-  const granted = await chrome.permissions.getAll();
+  const [granted, adapters] = await Promise.all([chrome.permissions.getAll(), getAllAdapters()]);
   const origins = granted.origins ?? [];
   const stale = adapters
     .filter((a) => !origins.includes(a.origin))
@@ -108,10 +110,10 @@ async function pruneRevoked() {
 async function updateBadge() {
   const enabled = await enabledAdapters();
   const keys = enabled.map((a) => `snap.${a.id}`);
-  const stored = await chrome.storage.local.get(keys);
+  const [stored, hidden] = await Promise.all([chrome.storage.local.get(keys), getHiddenMeters()]);
   /** @type {import('./lib/quota.js').Snapshot[]} */
   const snaps = Object.values(stored);
-  const worst = worstPct(snaps);
+  const worst = worstPct(snaps, hidden);
 
   if (worst === null) {
     await chrome.action.setBadgeText({ text: '' });

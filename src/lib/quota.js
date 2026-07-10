@@ -11,6 +11,7 @@
  * @property {number|null} [remaining] Unidades restantes (medidores de conteo).
  * @property {number|null} [total]     Total de unidades (si la plataforma lo expone).
  * @property {number|null} [used]      Unidades consumidas (conteo local, sin total conocido).
+ * @property {string} [detail]         Texto adicional ya formateado (p. ej. monto en dinero).
  *
  * @typedef {Object} Snapshot
  * @property {string} platformId
@@ -35,15 +36,18 @@ export function pctFromCounts(remaining, total) {
 }
 
 /**
- * Peor porcentaje usado de un conjunto de snapshots (para el badge).
+ * Peor porcentaje usado de un conjunto de snapshots (para el badge),
+ * ignorando los medidores que el usuario ocultó.
  * @param {Snapshot[]} snaps
+ * @param {Set<string>} [hidden] claves `${platformId}/${meterId}`
  * @returns {number|null}
  */
-export function worstPct(snaps) {
+export function worstPct(snaps, hidden = new Set()) {
   let worst = null;
   for (const s of snaps) {
     if (!s.ok) continue;
     for (const m of s.meters) {
+      if (hidden.has(`${s.platformId}/${m.id}`)) continue;
       if (m.usedPct === null || m.usedPct === undefined) continue;
       if (worst === null || m.usedPct > worst) worst = m.usedPct;
     }

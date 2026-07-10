@@ -1,0 +1,146 @@
+// @ts-check
+import {
+  getCustomServices,
+  setCustomServices,
+  validateService,
+  customToAdapter,
+} from '../adapters/custom.js';
+
+const t = (/** @type {string} */ key) => chrome.i18n.getMessage(key) || key;
+
+const $editor = /** @type {HTMLTextAreaElement} */ (document.getElementById('editor'));
+const $result = /** @type {HTMLPreElement} */ (document.getElementById('result'));
+
+const CURSOR_TEMPLATE = {
+  id: 'cursor',
+  name: 'Cursor',
+  origin: 'https://cursor.com/*',
+  url: 'https://cursor.com/api/usage',
+  method: 'GET',
+  meters: [
+    {
+      id: 'premium',
+      label: 'Premium requests',
+      usedPath: 'gpt-4.numRequests',
+      totalPath: 'gpt-4.maxRequestUsage',
+    },
+  ],
+};
+
+init();
+
+async function init() {
+  document.title = t('optTitle');
+  setText('title', t('optTitle'));
+  setText('intro', t('optIntro'));
+  setText('security-note', t('optSecurityNote'));
+  setText('template-btn', t('optTemplate'));
+  setText('test-btn', t('optTest'));
+  setText('save-btn', t('optSave'));
+
+  const services = await getCustomServices();
+  $editor.value = JSON.stringify(services, null, 2);
+
+  document.getElementById('template-btn')?.addEventListener('click', () => {
+    const current = parseEditor();
+    if (!Array.isArray(current)) return;
+    if (!current.some((s) => s?.id === CURSOR_TEMPLATE.id)) current.push(CURSOR_TEMPLATE);
+    $editor.value = JSON.stringify(current, null, 2);
+  });
+
+  document.getElementById('save-btn')?.addEventListener('click', () => void save());
+  document.getElementById('test-btn')?.addEventListener('click', () => void testAll());
+}
+
+/** @returns {any[]|null} */
+function parseEditor() {
+  try {
+    const parsed = JSON.parse($editor.value || '[]');
+    if (!Array.isArray(parsed)) {
+      showResult('err', t('optNotArray'));
+      return null;
+    }
+    return parsed;
+  } catch (e) {
+    showResult('err', `JSON: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  }
+}
+
+/** Valida todas las definiciones; null si hay errores. @returns {any[]|null} */
+function validateEditor() {
+  const parsed = parseEditor();
+  if (!parsed) return null;
+  const allErrors = [];
+  const seen = new Set();
+  for (const def of parsed) {
+    const errors = validateService(def);
+    if (def?.id && seen.has(def.id)) errors.push(`id "${def.id}": duplicated`);
+    if (def?.id) seen.add(def.id);
+    if (errors.length) allErrors.push(`[${def?.id ?? '?'}] ${errors.join(' · ')}`);
+  }
+  if (allErrors.length) {
+    showResult('err', allErrors.join('\n'));
+    return null;
+  }
+  return parsed;
+}
+
+async function save() {
+  const services = validateEditor();
+  if (!services) return;
+  await setCustomServices(services);
+  await chrome.runtime.sendMessage({ type: 'refresh' }).catch(() => {});
+  showResult('ok', t('optSaved'));
+}
+
+/** Prueba cada servicio del editor: pide el permiso y muestra los medidores leídos. */
+async function testAll() {
+  const services = validateEditor();
+  if (!services || !services.length) return;
+
+  const lines = [];
+  for (const def of services) {
+    const granted = await chrome.permissions
+      .request({ origins: [def.origin] })
+      .catch(() => false);
+    if (!granted) {
+      lines.push(`✗ ${def.name}: ${t('optNoPermission')}`);
+      continue;
+    }
+    try {
+      const snap = await customToAdapter(def).fetchSnapshot();
+      const meters = snap.meters
+        .map((m) => {
+          const val =
+            m.usedPct != null
+              ? `${m.usedPct}%`
+              : m.remaining != null
+                ? `remaining ${m.remaining}${m.total != null ? `/${m.total}` : ''}`
+                : `used ${m.used}`;
+          return `  · ${m.label}: ${val}`;
+        })
+        .join('\n');
+      lines.push(`✓ ${def.name}${snap.plan ? ` (${snap.plan})` : ''}\n${meters}`);
+    } catch (e) {
+      const name = e instanceof Error ? e.name : '';
+      lines.push(
+        `✗ ${def.name}: ${name === 'AuthError' ? t('optAuthFail') : name === 'ParseError' ? t('optParseFail') : String(e)}`
+      );
+    }
+  }
+  showResult(lines.some((l) => l.startsWith('✗')) ? 'err' : 'ok', lines.join('\n\n'));
+}
+
+/** @param {'ok'|'err'} kind @param {string} text */
+function showResult(kind, text) {
+  $result.hidden = false;
+  $result.className = kind;
+  $result.textContent = text;
+}
+
+/** @param {string} id @param {string} text */
+function setText(id, text) {
+  const node = document.getElementById(id);
+  if (node) node.textContent = text;
+}

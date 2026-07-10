@@ -1,5 +1,6 @@
 // @ts-check
-import { adapters } from '../adapters/index.js';
+import { getAllAdapters } from '../adapters/index.js';
+import { getHiddenMeters, toggleHiddenMeter } from '../lib/prefs.js';
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
   chrome.i18n.getMessage(key, args) || key;
@@ -10,6 +11,10 @@ const $add = /** @type {HTMLElement} */ (document.getElementById('add'));
 const $addList = /** @type {HTMLElement} */ (document.getElementById('add-list'));
 const $updated = /** @type {HTMLElement} */ (document.getElementById('updated'));
 const $refresh = /** @type {HTMLButtonElement} */ (document.getElementById('refresh'));
+const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('custom-link'));
+
+/** Plataformas con el panel "mostrar/ocultar medidores" abierto. @type {Set<string>} */
+const editing = new Set();
 
 init();
 
@@ -20,6 +25,11 @@ async function init() {
   setText('add-hint', t('addPlatformHint'));
   setText('footer-note', t('footerNote'));
   $refresh.title = t('refresh');
+  $customLink.textContent = t('customLink');
+  $customLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    void chrome.runtime.openOptionsPage();
+  });
 
   $refresh.addEventListener('click', () => void requestRefresh());
   chrome.storage.onChanged.addListener((_changes, area) => {
@@ -41,7 +51,11 @@ async function requestRefresh() {
 }
 
 async function render() {
-  const granted = await chrome.permissions.getAll();
+  const [granted, adapters, hidden] = await Promise.all([
+    chrome.permissions.getAll(),
+    getAllAdapters(),
+    getHiddenMeters(),
+  ]);
   const origins = granted.origins ?? [];
   const enabled = adapters.filter((a) => origins.includes(a.origin));
   const disabled = adapters.filter((a) => !origins.includes(a.origin));
@@ -49,7 +63,7 @@ async function render() {
   const keys = enabled.map((a) => `snap.${a.id}`);
   const stored = await chrome.storage.local.get(keys);
 
-  $cards.replaceChildren(...enabled.map((a) => card(a, stored[`snap.${a.id}`])));
+  $cards.replaceChildren(...enabled.map((a) => card(a, stored[`snap.${a.id}`], hidden)));
   $empty.hidden = enabled.length > 0;
 
   $add.hidden = disabled.length === 0;
@@ -62,17 +76,30 @@ async function render() {
 }
 
 /**
- * @param {(typeof adapters)[number]} adapter
- * @param {import('../lib/quota.js').Snapshot=} snap
+ * @param {import('../adapters/index.js').Adapter} adapter
+ * @param {import('../lib/quota.js').Snapshot|undefined} snap
+ * @param {Set<string>} hidden
  */
-function card(adapter, snap) {
+function card(adapter, snap, hidden) {
   const art = el('article', 'card');
+  const isEditing = editing.has(adapter.id);
 
   const head = el('div', 'card-head');
   head.append(el('span', 'pname', adapter.name));
   if (snap?.plan) head.append(el('span', 'chip', snap.plan));
   if (snap?.approx) head.append(el('span', 'chip', t('approxChip')));
   head.append(el('span', 'spacer'));
+
+  if (snap?.ok && snap.meters.length) {
+    const gear = iconBtn('gear', t('editMeters'));
+    if (isEditing) gear.classList.add('active');
+    gear.addEventListener('click', () => {
+      if (isEditing) editing.delete(adapter.id);
+      else editing.add(adapter.id);
+      void render();
+    });
+    head.append(gear);
+  }
   const remove = /** @type {HTMLButtonElement} */ (el('button', 'remove-btn', t('remove')));
   remove.addEventListener('click', () => void removePlatform(adapter));
   head.append(remove);
@@ -88,16 +115,36 @@ function card(adapter, snap) {
     return art;
   }
 
-  for (const m of snap.meters) art.append(meterEl(m));
+  for (const m of snap.meters) {
+    const key = `${snap.platformId}/${m.id}`;
+    const isHidden = hidden.has(key);
+    if (isHidden && !isEditing) continue;
+    art.append(meterEl(m, { key, isHidden, isEditing }));
+  }
   return art;
 }
 
-/** @param {import('../lib/quota.js').Meter} m */
-function meterEl(m) {
-  const box = el('div', 'meter');
+/**
+ * @param {import('../lib/quota.js').Meter} m
+ * @param {{key: string, isHidden: boolean, isEditing: boolean}} opts
+ */
+function meterEl(m, opts) {
+  const box = el('div', 'meter' + (opts.isHidden ? ' meter-hidden' : ''));
 
   const row = el('div', 'm-row');
-  row.append(el('span', 'm-label', m.label));
+  const labelWrap = el('span', 'm-label-wrap');
+  if (opts.isEditing) {
+    const eye = iconBtn(opts.isHidden ? 'eye-off' : 'eye', t('toggleMeter'));
+    eye.classList.add('eye-btn');
+    eye.addEventListener('click', async () => {
+      await toggleHiddenMeter(opts.key);
+      await chrome.runtime.sendMessage({ type: 'refresh' });
+    });
+    labelWrap.append(eye);
+  }
+  labelWrap.append(el('span', 'm-label', m.label));
+  row.append(labelWrap);
+
   const val =
     m.usedPct !== null && m.usedPct !== undefined
       ? `${m.usedPct}%`
@@ -117,19 +164,22 @@ function meterEl(m) {
     box.append(track);
   }
 
+  const notes = [];
+  if (m.detail) notes.push(m.detail);
   if (m.resetsAt && m.resetsAt > Date.now()) {
-    box.append(el('div', 'm-reset', t('resetsIn', [durationLabel(m.resetsAt - Date.now())])));
+    notes.push(t('resetsIn', [durationLabel(m.resetsAt - Date.now())]));
   }
+  if (notes.length) box.append(el('div', 'm-reset', notes.join(' · ')));
   return box;
 }
 
 /** ¿El adaptador necesita un script en la página (no hay endpoint de cuota)? */
-/** @param {(typeof adapters)[number]} adapter */
+/** @param {import('../adapters/index.js').Adapter} adapter */
 function needsPageScript(adapter) {
-  return 'contentScripts' in adapter;
+  return Boolean(adapter.contentScripts);
 }
 
-/** @param {(typeof adapters)[number]} adapter */
+/** @param {import('../adapters/index.js').Adapter} adapter */
 function addRow(adapter) {
   const row = el('div', 'add-row');
   const left = el('div', 'add-left');
@@ -142,6 +192,7 @@ function addRow(adapter) {
       needsPageScript(adapter) ? t('tierPageScript') : t('tierEndpoint')
     )
   );
+  if (adapter.custom) nameLine.append(el('span', 'chip', t('customChip')));
   left.append(nameLine);
   left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
   if (needsPageScript(adapter)) left.append(el('span', 'tier-note', t('pageScriptNote')));
@@ -162,12 +213,12 @@ function addRow(adapter) {
   return row;
 }
 
-/** @param {(typeof adapters)[number]} adapter */
+/** @param {import('../adapters/index.js').Adapter} adapter */
 async function removePlatform(adapter) {
   await chrome.permissions.remove({ origins: [adapter.origin] });
   if (needsPageScript(adapter)) {
     // Devolver también "scripting" si ya ninguna plataforma activa lo necesita.
-    const granted = await chrome.permissions.getAll();
+    const [granted, adapters] = await Promise.all([chrome.permissions.getAll(), getAllAdapters()]);
     const origins = granted.origins ?? [];
     const stillNeeded = adapters.some(
       (a) => a.id !== adapter.id && needsPageScript(a) && origins.includes(a.origin)
@@ -194,6 +245,21 @@ function agoLabel(ts) {
   const min = Math.round((Date.now() - ts) / 60_000);
   if (min < 1) return t('justNow');
   return t('updatedAgo', [min < 60 ? `${min} m` : `${Math.floor(min / 60)} h`]);
+}
+
+const ICONS = {
+  gear: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.5 4a6.7 6.7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2.1-1.3L15.6 3h-4l-.4 2.6a7 7 0 0 0-2.1 1.3l-2.3-1-2 3.4 2 1.5a6.7 6.7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2.1 1.3l.4 2.6h4l.4-2.6a7 7 0 0 0 2.1-1.3l2.3 1 2-3.4-2-1.5c.06-.4.1-.8.1-1.2z',
+  eye: 'M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z',
+  'eye-off':
+    'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
+};
+
+/** @param {keyof typeof ICONS} name @param {string} title */
+function iconBtn(name, title) {
+  const btn = /** @type {HTMLButtonElement} */ (el('button', 'icon-btn small'));
+  btn.title = title;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name]}" fill="currentColor"/></svg>`;
+  return btn;
 }
 
 /**

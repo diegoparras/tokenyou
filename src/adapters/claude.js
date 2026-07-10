@@ -53,6 +53,16 @@ export const claude = {
         });
       }
     }
+    const extra = usage?.extra_usage;
+    if (extra?.is_enabled && typeof extra.utilization === 'number') {
+      meters.push({
+        id: 'extra_usage',
+        label: t('meterExtraUsage'),
+        usedPct: Math.round(extra.utilization),
+        resetsAt: null,
+        detail: moneyDetail(extra),
+      });
+    }
     if (!meters.length) throw Object.assign(new Error('no meters'), { name: 'ParseError' });
 
     return {
@@ -72,6 +82,21 @@ function labelForKind(lim) {
   const model = lim.scope?.model?.display_name;
   if (model) return t('meterWeekModel', model);
   return t('meterWeek');
+}
+
+/**
+ * "US$ 21,84 / US$ 100,00" a partir de créditos enteros + decimal_places.
+ * @param {{used_credits?: number, monthly_limit?: number, currency?: string, decimal_places?: number}} extra
+ * @returns {string|undefined}
+ */
+function moneyDetail(extra) {
+  const dp = Number.isFinite(extra.decimal_places) ? Number(extra.decimal_places) : 2;
+  const currency = extra.currency || 'USD';
+  if (!Number.isFinite(extra.used_credits) || !Number.isFinite(extra.monthly_limit)) return undefined;
+  const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency });
+  const used = Number(extra.used_credits) / 10 ** dp;
+  const limit = Number(extra.monthly_limit) / 10 ** dp;
+  return `${fmt.format(used)} / ${fmt.format(limit)}`;
 }
 
 /** "default_claude_max_20x" → "Max 20x" @param {string=} tier */
