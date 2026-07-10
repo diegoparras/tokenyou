@@ -22,6 +22,8 @@
   "meterAgentic": { "message": "Research agéntico" },
   "remainingOf": { "message": "quedan $1 de $2", "placeholders": { "1": { "content": "$1" }, "2": { "content": "$2" } } },
   "remainingOnly": { "message": "quedan $1", "placeholders": { "1": { "content": "$1" } } },
+  "sentCount": { "message": "$1 enviados", "placeholders": { "1": { "content": "$1" } } },
+  "approxChip": { "message": "conteo local" },
   "emptyTitle": { "message": "Todavía no activaste plataformas" },
   "emptyBody": { "message": "Activá una plataforma abajo. TokenYou solo podrá leer los números de uso de ese sitio — nunca tus conversaciones." },
   "footerNote": { "message": "Solo local · cero telemetría · open source" }

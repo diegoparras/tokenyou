@@ -5,11 +5,11 @@ import { worstPct } from './lib/quota.js';
 const ALARM = 'tokenyou-refresh';
 const REFRESH_MINUTES = 5;
 
-chrome.runtime.onInstalled.addListener(() => { void syncAlarm(); });
-chrome.runtime.onStartup.addListener(() => { void syncAlarm(); });
+chrome.runtime.onInstalled.addListener(() => { void syncAlarm(); void syncContentScripts(); });
+chrome.runtime.onStartup.addListener(() => { void syncAlarm(); void syncContentScripts(); });
 
-chrome.permissions.onAdded.addListener(() => { void syncAlarm(); void refreshAll(); });
-chrome.permissions.onRemoved.addListener(() => { void syncAlarm(); void pruneRevoked(); });
+chrome.permissions.onAdded.addListener(() => { void syncAlarm(); void syncContentScripts(); void refreshAll(); });
+chrome.permissions.onRemoved.addListener(() => { void syncAlarm(); void syncContentScripts(); void pruneRevoked(); });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM) void refreshAll();
@@ -37,6 +37,29 @@ async function syncAlarm() {
   } else {
     await chrome.alarms.clear(ALARM);
     await chrome.action.setBadgeText({ text: '' });
+  }
+}
+
+/**
+ * Registra los content scripts de las plataformas que los declaran (solo si
+ * el usuario concedió ese host) y desregistra los de plataformas revocadas.
+ */
+async function syncContentScripts() {
+  const granted = await chrome.permissions.getAll();
+  const origins = granted.origins ?? [];
+  const registered = await chrome.scripting.getRegisteredContentScripts();
+  const registeredIds = new Set(registered.map((s) => s.id));
+
+  for (const adapter of adapters) {
+    const scripts = /** @type {chrome.scripting.RegisteredContentScript[]|undefined} */ (
+      /** @type {any} */ (adapter).contentScripts
+    );
+    if (!scripts) continue;
+    const enabled = origins.includes(adapter.origin);
+    const toAdd = scripts.filter((s) => enabled && !registeredIds.has(s.id));
+    const toRemove = scripts.filter((s) => !enabled && registeredIds.has(s.id)).map((s) => s.id);
+    if (toAdd.length) await chrome.scripting.registerContentScripts(toAdd);
+    if (toRemove.length) await chrome.scripting.unregisterContentScripts({ ids: toRemove });
   }
 }
 

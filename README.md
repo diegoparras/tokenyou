@@ -17,7 +17,7 @@ It exists because this category has a trust problem: usage trackers run next to 
 | Telemetry | Analytics, heartbeats | **Zero network traffic** except to platforms you enabled |
 | Code | Closed | MIT, this repo, **reproducible build** (`git archive`, hash published per release) |
 
-Manifest permissions, in full: `storage`, `alarms`. That's it.
+Manifest permissions, in full: `storage`, `alarms`, `scripting`. The `scripting` permission is used for exactly one thing: registering the opt-in Gemini send-counter (see below) on gemini.google.com **after** you grant that host — it has no effect on any other site.
 
 ## Platforms
 
@@ -27,8 +27,11 @@ Manifest permissions, in full: `storage`, `alarms`. That's it.
 | ChatGPT (chatgpt.com) | 5-hour + weekly window %, reset times, plan | `GET /backend-api/wham/usage` |
 | Grok (grok.com) | Remaining/total queries per rolling window | `POST /rest/rate-limits` |
 | Perplexity | Remaining Pro / Research / Labs / Agentic searches | `GET /rest/rate-limit/all` |
+| Gemini (gemini.google.com) | Prompts sent in the last 5 h / 7 days (local count) | Send-counter content script — no quota endpoint exists |
 
-These are the platforms' own internal endpoints — the same data their web apps display. They are undocumented and can change; each adapter is isolated, so a breaking change degrades that one platform to "unavailable" while the rest keep working.
+Gemini is the one platform without a usage endpoint, so TokenYou counts your sends locally: a page-world script watches for the app's own send request (`StreamGenerate`) and emits an **empty signal** — it never reads the request, your prompt, or the response. A bridge script records only a timestamp and the visible model name to local storage. That's the entire data flow, and it only exists if you enable Gemini. The card is marked "local count" because it can't see usage from other devices.
+
+The other four are the platforms' own internal endpoints — the same data their web apps display. They are undocumented and can change; each adapter is isolated, so a breaking change degrades that one platform to "unavailable" while the rest keep working.
 
 ## Efficiency
 

@@ -71,6 +71,7 @@ function card(adapter, snap) {
   const head = el('div', 'card-head');
   head.append(el('span', 'pname', adapter.name));
   if (snap?.plan) head.append(el('span', 'chip', snap.plan));
+  if (snap?.approx) head.append(el('span', 'chip', t('approxChip')));
   head.append(el('span', 'spacer'));
   const remove = /** @type {HTMLButtonElement} */ (el('button', 'remove-btn', t('remove')));
   remove.addEventListener('click', () => void removePlatform(adapter));
@@ -102,7 +103,9 @@ function meterEl(m) {
       ? `${m.usedPct}%`
       : m.total != null && m.remaining != null
         ? t('remainingOf', [String(m.remaining), String(m.total)])
-        : t('remainingOnly', [String(m.remaining ?? '—')]);
+        : m.used != null
+          ? t('sentCount', [String(m.used)])
+          : t('remainingOnly', [String(m.remaining ?? '—')]);
   row.append(el('span', 'm-val', val));
   box.append(row);
 

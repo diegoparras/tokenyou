@@ -10,11 +10,13 @@
  * @property {number|null} resetsAt Epoch ms del próximo reset, o null si se desconoce.
  * @property {number|null} [remaining] Unidades restantes (medidores de conteo).
  * @property {number|null} [total]     Total de unidades (si la plataforma lo expone).
+ * @property {number|null} [used]      Unidades consumidas (conteo local, sin total conocido).
  *
  * @typedef {Object} Snapshot
  * @property {string} platformId
  * @property {boolean} ok
  * @property {'auth'|'http'|'network'|'parse'} [error]
+ * @property {boolean} [approx]     true si los valores son conteo local, no dato de la plataforma.
  * @property {string} [plan]        Nombre legible del plan, si la plataforma lo expone.
  * @property {Meter[]} meters
  * @property {number} fetchedAt     Epoch ms.

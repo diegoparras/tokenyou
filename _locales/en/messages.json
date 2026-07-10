@@ -22,6 +22,8 @@
   "meterAgentic": { "message": "Agentic research" },
   "remainingOf": { "message": "$1 of $2 left", "placeholders": { "1": { "content": "$1" }, "2": { "content": "$2" } } },
   "remainingOnly": { "message": "$1 left", "placeholders": { "1": { "content": "$1" } } },
+  "sentCount": { "message": "$1 sent", "placeholders": { "1": { "content": "$1" } } },
+  "approxChip": { "message": "local count" },
   "emptyTitle": { "message": "No platforms enabled yet" },
   "emptyBody": { "message": "Enable a platform below. TokenYou will only be able to read that site's usage numbers — never your conversations." },
   "footerNote": { "message": "Local-only · zero telemetry · open source" }
