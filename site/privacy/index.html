@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidad — TokenYou | Escriba</title>
+<meta name="description" content="Política de privacidad de TokenYou: todo el procesamiento es local, no se recolecta ni transmite ningún dato de usuario. Parte del Ecosistema Escriba.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230f766e'/%3E%3Crect x='3' y='8' width='13' height='8' rx='2.4' fill='none' stroke='white' stroke-width='1.8'/%3E%3Crect x='5.4' y='10.4' width='5.5' height='3.2' rx='1' fill='white'/%3E%3Crect x='17.5' y='10' width='2.2' height='4' rx='1' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #fff8f3; --bg-2: #fdf1e9; --surface: #ffffff; --surface-2: #fbeee4;
+    --ink: #2a1b14; --ink-2: #6d5749; --ink-3: #9c8877; --line: #ecdccd; --line-strong: #e0cdbb;
+    --terra: #e06a3a; --terra-deep: #c9531f; --terra-soft: #f0a98c; --terra-wash: #ffe7da;
+    --token: #0f766e; --ok: #15803d;
+    --radius: 18px;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b120d; --bg-2: #22160f; --surface: #271a12; --surface-2: #33231a;
+    --ink: #fdf0e7; --ink-2: #cdb8a8; --ink-3: #93806f; --line: #3d2c1f; --line-strong: #4a3626;
+    --terra: #ef8a5c; --terra-deep: #f0996d; --terra-soft: #b8613a; --terra-wash: #3a2318;
+    --token: #2dd4bf; --ok: #4ade80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b120d; --bg-2: #22160f; --surface: #271a12; --surface-2: #33231a;
+      --ink: #fdf0e7; --ink-2: #cdb8a8; --ink-3: #93806f; --line: #3d2c1f; --line-strong: #4a3626;
+      --terra: #ef8a5c; --terra-deep: #f0996d; --terra-soft: #b8613a; --terra-wash: #3a2318;
+      --token: #2dd4bf; --ok: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--terra-deep); }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--terra-deep); outline-offset: 3px; border-radius: 4px; }
+  code { font-family: var(--mono); font-size: .86em; background: var(--surface-2); padding: 2px 6px; border-radius: 5px; }
+
+  nav { border-bottom: 1px solid var(--line); background: var(--bg); }
+  .nav-in { max-width: 760px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; height: 60px; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; color: var(--ink); letter-spacing: -.02em; text-decoration: none; }
+  .logo svg { width: 21px; height: 21px; color: var(--token); }
+  .nav-in .sp { flex: 1; }
+  .lang { font-family: var(--mono); font-size: 12px; color: var(--ink-3); display: inline-flex; gap: 5px; }
+  .lang a { color: var(--ink-3); text-decoration: none; }
+  .lang a:hover { color: var(--terra-deep); }
+  .lang .on { color: var(--terra-deep); font-weight: 700; }
+
+  header.doc { padding: 56px 0 8px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--terra-deep); margin-bottom: 14px; }
+  h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -.03em; font-weight: 700; margin: 0 0 10px; }
+  .updated { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); }
+
+  .tldr { margin: 30px 0 8px; border: 1px solid var(--line-strong); border-left: 3px solid var(--token); border-radius: 0 var(--radius) var(--radius) 0; background: linear-gradient(135deg, color-mix(in srgb, var(--token) 8%, var(--surface)), var(--surface) 60%); padding: 20px 24px; }
+  .tldr b { color: var(--ink); }
+  .tldr p { margin: 0; color: var(--ink-2); }
+
+  main { padding: 24px 0 40px; }
+  h2 { font-size: 20px; letter-spacing: -.02em; margin: 40px 0 10px; padding-top: 8px; }
+  h2 .n { font-family: var(--mono); font-size: 14px; color: var(--terra-deep); margin-right: 10px; font-weight: 700; }
+  p { color: var(--ink-2); margin: 0 0 14px; }
+  strong { color: var(--ink); }
+  ul { color: var(--ink-2); padding-left: 22px; margin: 0 0 14px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--terra); }
+  .endpoints { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--ink-2); overflow-x: auto; margin: 4px 0 16px; }
+  .endpoints div { white-space: nowrap; }
+  .endpoints b { color: var(--ink); }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 48px; background: var(--bg-2); margin-top: 20px; }
+  .foot { max-width: 760px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .foot a { color: var(--terra-deep); text-decoration: none; }
+  .foot a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="logo" href="../">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+      TokenYou
+    </a>
+    <div class="sp"></div>
+    <span class="lang"><b class="on">ES</b> / <a href="../en/privacy/">EN</a></span>
+  </div>
+</nav>
+
+<header class="doc wrap">
+  <div class="eyebrow">TokenYou · Legal</div>
+  <h1>Política de Privacidad</h1>
+  <div class="updated">Última actualización: 10 de julio de 2026</div>
+</header>
+
+<div class="wrap">
+  <div class="tldr">
+    <p><b>En resumen: todo el procesamiento es local. Nada sale de tu navegador.</b> TokenYou no tiene servidores, no usa analítica ni telemetría, y no recolecta, almacena ni transmite ningún dato personal ni el contenido de tus conversaciones. El único tráfico de red es hacia las plataformas de IA que vos activás, y únicamente para leer tus números de uso.</p>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <h2><span class="n">01</span>Qué datos recolectamos</h2>
+  <p><strong>Ninguno.</strong> TokenYou no recolecta información de identificación personal, credenciales, comunicaciones, ubicación, historial de navegación ni actividad del usuario. No hay cuentas, no hay registro y no existe ningún servidor de TokenYou al que se puedan enviar datos.</p>
+
+  <h2><span class="n">02</span>Qué lee TokenYou, y cómo</h2>
+  <p>Para cada plataforma que <strong>vos activás explícitamente</strong>, la extensión hace una petición en segundo plano al endpoint de uso de esa misma plataforma —el mismo que la plataforma usa para mostrarte tu propio consumo— y lee únicamente los <strong>números de cuota</strong>: porcentaje usado, unidades restantes y horas de reinicio. Endpoints leídos:</p>
+  <div class="endpoints">
+    <div><b>Claude</b> — claude.ai/api/organizations/{org}/usage</div>
+    <div><b>ChatGPT</b> — chatgpt.com/backend-api/wham/usage</div>
+    <div><b>Gemini</b> — gemini.google.com (RPC interno de uso)</div>
+    <div><b>Grok</b> — grok.com/rest/rate-limits</div>
+    <div><b>Perplexity</b> — perplexity.ai/rest/rate-limit/all</div>
+  </div>
+  <p>Las peticiones son <strong>del mismo origen</strong> (same-origin): tu navegador adjunta tu sesión automáticamente. La extensión <strong>no tiene el permiso <code>cookies</code></strong> y nunca ve ni lee tu credencial de sesión.</p>
+
+  <h2><span class="n">03</span>Lo que TokenYou nunca hace</h2>
+  <ul>
+    <li><strong>Nunca lee tus conversaciones.</strong> Ningún código de la extensión se ejecuta dentro de las páginas de las plataformas. No puede acceder al contenido de tus chats, ni en principio.</li>
+    <li><strong>Nunca lee tus cookies</strong> ni tu token de sesión.</li>
+    <li><strong>Nunca registra</strong> las páginas que visitás, tus clics, tus pulsaciones de teclado ni tu ubicación.</li>
+    <li>En el único caso donde se descarga HTML (Gemini, para obtener dos tokens técnicos necesarios para su API de uso), esos valores se usan en memoria de forma efímera y se descartan; nunca se almacena ni transmite el contenido de la página.</li>
+  </ul>
+
+  <h2><span class="n">04</span>Almacenamiento</h2>
+  <p>Los porcentajes de uso y las horas de reinicio se guardan en <code>chrome.storage.local</code>, es decir, <strong>en tu propio dispositivo</strong>. No se sincronizan con la nube, no se suben a ningún lado y podés borrarlos en cualquier momento quitando las plataformas o desinstalando la extensión.</p>
+
+  <h2><span class="n">05</span>Permisos</h2>
+  <p>El manifiesto declara solo dos permisos: <code>storage</code> (guardar los números localmente) y <code>alarms</code> (refrescar el uso en segundo plano sin un bucle de sondeo). El acceso a cada sitio es un <strong>permiso opcional que vos concedés plataforma por plataforma</strong> y podés revocar cuando quieras. Recién instalada, TokenYou no tiene acceso a ningún sitio.</p>
+
+  <h2><span class="n">06</span>Terceros</h2>
+  <p>No hay terceros. TokenYou <strong>no vende ni transfiere datos</strong> (no hay datos que vender), no incluye analítica, ni SDKs de publicidad, ni dependencias externas, ni código remoto. No se comunica con ningún servidor que no sea el de las plataformas de IA que vos habilitaste.</p>
+
+  <h2><span class="n">07</span>Código abierto y verificable</h2>
+  <p>TokenYou es software libre bajo licencia MIT. Su código completo es público en <a href="https://github.com/diegoparras/tokenyou" rel="noreferrer">GitHub</a>, y el paquete publicado es reproducible byte a byte desde un commit etiquetado: cualquiera puede confirmar que lo que se instala es exactamente ese código. No tenés que confiar en esta política — podés verificarla.</p>
+
+  <h2><span class="n">08</span>Cambios en esta política</h2>
+  <p>Si esta política cambia, se actualizará en esta página y en el repositorio, con su fecha. Los cambios sustanciales se reflejarán también en las notas de la versión correspondiente.</p>
+
+  <h2><span class="n">09</span>Contacto</h2>
+  <p>Preguntas o inquietudes: abrí un issue en el <a href="https://github.com/diegoparras/tokenyou/issues" rel="noreferrer">repositorio de GitHub</a>. TokenYou es parte del <a href="https://getescriba.com" rel="noreferrer">Ecosistema Escriba</a>.</p>
+
+</main>
+
+<footer>
+  <div class="foot">
+    <span>© 2026 Diego Parras y contribuidores · MIT</span>
+    <span>TokenYou es parte del <a href="https://getescriba.com" rel="noreferrer">Ecosistema Escriba</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
