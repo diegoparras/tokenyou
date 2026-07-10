@@ -13,6 +13,10 @@
   }
   * { box-sizing:border-box; }
   body { margin:0; font-family:var(--sans); background:#333; }
+  /* ?s=N → aislar una slide a 1280x800 exactos para capturar */
+  body.solo { background:transparent; }
+  body.solo .slide { margin:0 !important; display:none; }
+  body.solo .slide.show { display:flex; }
   .slide {
     width:1280px; height:800px; position:relative; overflow:hidden;
     display:flex; align-items:center; gap:70px; padding:0 96px;
@@ -174,5 +178,14 @@
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
 </div>
 
+<script>
+  // ?s=N aísla la slide N para capturarla sola a 1280x800.
+  const n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('solo');
+    const el = document.getElementById('s' + n);
+    if (el) el.classList.add('show');
+  }
+</script>
 </body>
 </html>
