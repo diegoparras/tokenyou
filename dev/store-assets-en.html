@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TokenYou — store assets (EN)</title>
+<style>
+  :root {
+    --bg: #0B131C; --bg2:#0E1620; --surface:#141F2B; --surface2:#1B2836;
+    --ink:#E8EEF3; --ink2:#A8B8C4; --ink3:#6E8090; --line:#243442;
+    --accent:#2DD4BF; --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171; --track:#23313F;
+    --mono:"Cascadia Code","SF Mono",ui-monospace,Consolas,monospace;
+    --sans:system-ui,"Segoe UI",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--sans); background:#333; }
+  body.solo { background:transparent; }
+  body.solo .slide { margin:0 !important; display:none; }
+  body.solo .slide.show { display:flex; }
+  .slide {
+    width:1280px; height:800px; position:relative; overflow:hidden;
+    display:flex; align-items:center; gap:70px; padding:0 96px;
+    background:radial-gradient(1100px 700px at 78% -10%, #123 0%, var(--bg) 55%);
+    color:var(--ink);
+  }
+  .slide + .slide { margin-top:40px; }
+  .glow { position:absolute; width:520px; height:520px; border-radius:50%;
+    background:radial-gradient(circle, color-mix(in srgb,var(--accent) 26%,transparent), transparent 70%);
+    filter:blur(20px); right:-80px; top:-120px; pointer-events:none; }
+  .copy { flex:1; max-width:520px; position:relative; z-index:2; }
+  .eyebrow { font-family:var(--mono); font-size:16px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:22px; }
+  .copy h2 { font-size:56px; line-height:1.06; letter-spacing:-.03em; margin:0 0 22px; font-weight:800; }
+  .copy h2 em { font-style:normal; color:var(--accent); }
+  .copy p { font-size:23px; line-height:1.5; color:var(--ink2); margin:0; }
+  .pts { list-style:none; padding:0; margin:26px 0 0; display:flex; flex-direction:column; gap:16px; }
+  .pts li { display:flex; align-items:center; gap:14px; font-size:21px; color:var(--ink); }
+  .pts .t { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); font-weight:800; flex:none; }
+  .stage { flex:none; position:relative; z-index:2; }
+
+  .mock { width:360px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:4px 0 12px; font-size:13px; }
+  .mh { display:flex; align-items:center; justify-content:space-between; padding:15px 17px 10px; }
+  .mb { display:flex; align-items:center; gap:8px; font-weight:750; font-size:15px; }
+  .mb svg { width:19px; height:19px; color:var(--accent); }
+  .ring { width:32px; height:32px; }
+  .ring circle { fill:none; stroke-width:5; }
+  .rt { stroke:var(--track); } .rf { stroke:var(--crit); stroke-linecap:round; }
+  .ring text { font-family:var(--mono); font-size:12px; font-weight:600; fill:var(--ink); text-anchor:middle; }
+  .c { background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:9px 13px; padding:12px 14px; }
+  .ch { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .nm { font-weight:650; font-size:13.5px; } .chip { font-family:var(--mono); font-size:9.5px; background:var(--surface2); color:var(--ink2); border-radius:20px; padding:2px 8px; }
+  .m { margin-bottom:10px; } .m:last-child { margin-bottom:0; }
+  .mr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .ml { font-size:12px; color:var(--ink2); } .mv { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); }
+  .tr { position:relative; height:7px; border-radius:4px; background:var(--track); overflow:hidden; }
+  .tr::before,.tr::after { content:""; position:absolute; top:1px; bottom:1px; width:1px; background:var(--bg2); opacity:.55; }
+  .tr::before { left:60%; } .tr::after { left:85%; }
+  .f { height:100%; border-radius:4px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .f.ok { background-color:var(--ok); } .f.warn { background-color:var(--warn); } .f.crit { background-color:var(--crit); }
+  .rs { font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:4px; }
+
+  .pgrid { display:grid; grid-template-columns:repeat(2,240px); gap:16px; }
+  .pcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
+  .pcard::before { content:""; position:absolute; left:0; top:14px; bottom:14px; width:3px; border-radius:3px; background:var(--pc); }
+  .pcard h3 { display:flex; align-items:center; gap:9px; margin:0 0 6px; font-size:18px; }
+  .pcard h3 i { width:10px; height:10px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .pcard p { margin:0; font-size:14px; color:var(--ink2); }
+
+  .scale { display:flex; flex-direction:column; gap:18px; width:440px; }
+  .sc { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .sc .rg { font-family:var(--mono); font-weight:700; font-size:16px; margin-bottom:12px; }
+  .sc .bar { height:10px; border-radius:5px; background:var(--track); overflow:hidden; }
+  .sc .bar i { display:block; height:100%; border-radius:5px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .sc.g .rg { color:var(--ok); } .sc.g i { background-color:var(--ok); width:38%; }
+  .sc.a .rg { color:var(--warn); } .sc.a i { background-color:var(--warn); width:72%; }
+  .sc.r .rg { color:var(--crit); } .sc.r i { background-color:var(--crit); width:93%; }
+
+  .wm { position:absolute; bottom:34px; left:96px; font-family:var(--mono); font-size:15px; color:var(--ink3); display:flex; align-items:center; gap:9px; z-index:2; }
+  .wm b { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1 -->
+<div class="slide" id="s1">
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="eyebrow">Extension · Open source · MIT</div>
+    <h2>All your AI limits, <em>in one place</em></h2>
+    <p>Claude, ChatGPT, Gemini, Grok and Perplexity. How much you've used, when it resets, and a warning before you hit the limit.</p>
+  </div>
+  <div class="stage">
+    <div class="mock">
+      <div class="mh"><span class="mb"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
+        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="84.8 94.2"/><text x="18" y="21.5">90</text></svg></div>
+      <div class="c" style="--pc:#D97757"><div class="ch"><span class="dot"></span><span class="nm">Claude</span><span class="chip">Max 20x</span></div>
+        <div class="m"><div class="mr"><span class="ml">Session (5 h)</span><span class="mv">33%</span></div><div class="tr"><div class="f ok" style="width:33%"></div></div><div class="rs">resets in 2 h 05 m</div></div>
+        <div class="m"><div class="mr"><span class="ml">Week · Fable</span><span class="mv">64%</span></div><div class="tr"><div class="f warn" style="width:64%"></div></div><div class="rs">resets in 3 d 0 h</div></div>
+        <div class="m"><div class="mr"><span class="ml">Extra usage (month)</span><span class="mv">22%</span></div><div class="tr"><div class="f ok" style="width:22%"></div></div><div class="rs">US$ 21.84 / US$ 100.00</div></div></div>
+      <div class="c" style="--pc:#8A93A6"><div class="ch"><span class="dot"></span><span class="nm">Grok</span></div>
+        <div class="m"><div class="mr"><span class="ml">4 h window</span><span class="mv">90%</span></div><div class="tr"><div class="f crit" style="width:90%"></div></div><div class="rs">1 of 10 left</div></div></div>
+      <div class="c" style="--pc:#4E8CF9"><div class="ch"><span class="dot"></span><span class="nm">Gemini</span></div>
+        <div class="m"><div class="mr"><span class="ml">Weekly</span><span class="mv">1%</span></div><div class="tr"><div class="f ok" style="width:1%"></div></div><div class="rs">resets in 4 d 5 h</div></div></div>
+    </div>
+  </div>
+  <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
+</div>
+
+<!-- SLIDE 2 -->
+<div class="slide" id="s2">
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="eyebrow">Security</div>
+    <h2>No code on your pages. <em>Ever.</em></h2>
+    <p>We don't read your conversations because we can't: we only request the quota data, in the background.</p>
+    <ul class="pts">
+      <li><span class="t">✓</span>0 sites accessed on install</li>
+      <li><span class="t">✓</span>0 telemetry, analytics or servers</li>
+      <li><span class="t">✓</span>Per-platform permission, revocable</li>
+      <li><span class="t">✓</span>MIT + verifiable reproducible build</li>
+    </ul>
+  </div>
+  <div class="stage">
+    <div class="mock">
+      <div class="mh"><span class="mb"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
+        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="10.4 94.2" style="stroke:var(--ok)"/><text x="18" y="21.5">11</text></svg></div>
+      <div class="c" style="--pc:#10A37F"><div class="ch"><span class="dot"></span><span class="nm">ChatGPT</span><span class="chip">Plus</span></div>
+        <div class="m"><div class="mr"><span class="ml">5 h window</span><span class="mv">11%</span></div><div class="tr"><div class="f ok" style="width:11%"></div></div><div class="rs">resets in 3 h 57 m</div></div>
+        <div class="m"><div class="mr"><span class="ml">Weekly</span><span class="mv">2%</span></div><div class="tr"><div class="f ok" style="width:2%"></div></div><div class="rs">resets in 6 d 21 h</div></div></div>
+      <div class="c" style="--pc:#26B8CE"><div class="ch"><span class="dot"></span><span class="nm">Perplexity</span></div>
+        <div class="m"><div class="mr"><span class="ml">Pro searches</span><span class="mv">287 left</span></div></div>
+        <div class="m"><div class="mr"><span class="ml">Research</span><span class="mv">12 left</span></div></div></div>
+    </div>
+  </div>
+  <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
+</div>
+
+<!-- SLIDE 3 -->
+<div class="slide" id="s3">
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="eyebrow">Platforms</div>
+    <h2>Five out of the box. <em>Yours too.</em></h2>
+    <p>And any tool with a usage endpoint —Cursor, Copilot— is added as your own service, no code required.</p>
+  </div>
+  <div class="stage">
+    <div class="pgrid">
+      <div class="pcard" style="--pc:#D97757"><h3><i></i>Claude</h3><p>Session, weekly, extra usage. Includes Claude Code.</p></div>
+      <div class="pcard" style="--pc:#10A37F"><h3><i></i>ChatGPT</h3><p>5 h window and weekly cap, with plan.</p></div>
+      <div class="pcard" style="--pc:#4E8CF9"><h3><i></i>Gemini</h3><p>Current and weekly compute, real data.</p></div>
+      <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Remaining queries per window.</p></div>
+      <div class="pcard" style="--pc:#26B8CE"><h3><i></i>Perplexity</h3><p>Pro, Research, Labs and agentic.</p></div>
+      <div class="pcard" style="--pc:#2DD4BF"><h3><i></i>Yours</h3><p>Any JSON usage endpoint.</p></div>
+    </div>
+  </div>
+  <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
+</div>
+
+<!-- SLIDE 4 -->
+<div class="slide" id="s4">
+  <div class="glow"></div>
+  <div class="copy">
+    <div class="eyebrow">At a glance</div>
+    <h2>Green, amber, <em>red.</em></h2>
+    <p>The same scale on every bar and in the toolbar badge. Two fixed marks show how far you are from the next zone.</p>
+  </div>
+  <div class="stage">
+    <div class="scale">
+      <div class="sc g"><div class="rg">0 – 59% · green</div><div class="bar"><i></i></div></div>
+      <div class="sc a"><div class="rg">60 – 84% · amber</div><div class="bar"><i></i></div></div>
+      <div class="sc r"><div class="rg">85 – 100% · red</div><div class="bar"><i></i></div></div>
+    </div>
+  </div>
+  <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
+</div>
+
+<script>
+  const n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('solo');
+    const el = document.getElementById('s' + n);
+    if (el) el.classList.add('show');
+  }
+</script>
+</body>
+</html>
