@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TokenYou — Todos tus límites de IA en un solo lugar</title>
+<meta name="description" content="Extensión de Chrome open source (MIT) que muestra cuánto usaste de Claude, ChatGPT, Gemini, Grok y Perplexity. Verificablemente privada: ningún código en tus páginas, cero telemetría.">
+<meta property="og:title" content="TokenYou — Todos tus límites de IA en un solo lugar">
+<meta property="og:description" content="Open source, permisos mínimos, cero telemetría. Ningún código de TokenYou corre en tus páginas — nunca.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://getescriba.com/tokenyou">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230F766E'/%3E%3Crect x='3' y='8' width='13' height='8' rx='2.4' fill='none' stroke='white' stroke-width='1.8'/%3E%3Crect x='5.4' y='10.4' width='5.5' height='3.2' rx='1' fill='white'/%3E%3Crect x='17.5' y='10' width='2.2' height='4' rx='1' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0B131C;
+    --bg-2: #0E1620;
+    --surface: #141F2B;
+    --surface-2: #1B2836;
+    --ink: #E8EEF3;
+    --ink-2: #A8B8C4;
+    --ink-3: #6E8090;
+    --line: #24344266;
+    --accent: #2DD4BF;
+    --accent-deep: #0F766E;
+    --ok: #4ADE80;
+    --warn: #FBBF24;
+    --crit: #F87171;
+    --track: #23313F;
+    --shadow: 0 2px 6px rgba(0,0,0,.3), 0 14px 40px rgba(0,0,0,.35);
+    --mono: "Cascadia Code", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --sans: system-ui, "Segoe UI", -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F6F8FA;
+      --bg-2: #FAFBFC;
+      --surface: #FFFFFF;
+      --surface-2: #EEF2F5;
+      --ink: #16222E;
+      --ink-2: #47586A;
+      --ink-3: #7B8A96;
+      --line: #DCE3E9;
+      --accent: #0F766E;
+      --accent-deep: #0F766E;
+      --ok: #15803D;
+      --warn: #B45309;
+      --crit: #B91C1C;
+      --track: #E2E8ED;
+      --shadow: 0 2px 6px rgba(25,45,65,.07), 0 14px 40px rgba(25,45,65,.1);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  /* ============ NAV ============ */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-in { display: flex; align-items: center; gap: 26px; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 750; font-size: 17px; color: var(--ink); letter-spacing: -.02em; }
+  .logo:hover { text-decoration: none; }
+  .logo b { color: var(--accent); font-weight: 750; }
+  .logo svg { width: 22px; height: 22px; color: var(--accent); }
+  .nav-links { display: flex; gap: 20px; margin-left: auto; font-size: 14px; }
+  .nav-links a { color: var(--ink-2); }
+  .nav-links a:hover { color: var(--accent); text-decoration: none; }
+  .gh-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); border-radius: 9px;
+    padding: 7px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .gh-btn:hover { border-color: var(--accent); text-decoration: none; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .gh-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  @media (max-width: 720px) { .nav-links a:not(.gh-btn) { display: none; } }
+
+  /* ============ HERO ============ */
+  .hero {
+    display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center;
+    padding: 84px 0 72px;
+  }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 56px; } }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.2vw, 54px); line-height: 1.08; margin: 0 0 22px;
+    letter-spacing: -.03em; font-weight: 800; text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { font-size: 19px; color: var(--ink-2); max-width: 52ch; margin: 0 0 30px; }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    border-radius: 11px; padding: 13px 24px; font-size: 15.5px; font-weight: 700;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: var(--bg); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .btn-primary:hover { box-shadow: 0 8px 26px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .cta-note { font-family: var(--mono); font-size: 12px; color: var(--ink-3); width: 100%; margin-top: 4px; }
+
+  /* ---- mockup del popup ---- */
+  .mock {
+    width: 340px; margin: 0 auto;
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); padding: 4px 0 10px; font-size: 13px;
+    position: relative;
+  }
+  .mock::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 16px; padding: 1px;
+    background: linear-gradient(140deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 40%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+  }
+  .mock-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 9px; }
+  .mock-brand { display: flex; align-items: center; gap: 7px; font-weight: 750; font-size: 14px; letter-spacing: -.01em; }
+  .mock-brand svg { width: 18px; height: 18px; color: var(--accent); }
+  .mock-brand b { color: var(--accent); }
+  .ring { width: 30px; height: 30px; }
+  .ring circle { fill: none; stroke-width: 5; }
+  .ring .rt { stroke: var(--track); }
+  .ring .rf { stroke: var(--crit); stroke-linecap: round; transition: stroke-dasharray 1s cubic-bezier(.22,1,.36,1); }
+  .ring text { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  .mcard { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; margin: 8px 12px; padding: 11px 13px; }
+  .mcard-head { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
+  .mdot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 18%, transparent); background: var(--pc); }
+  .mname { font-weight: 650; font-size: 13px; }
+  .mchip { font-family: var(--mono); font-size: 9px; background: var(--surface-2); color: var(--ink-2); border-radius: 20px; padding: 1.5px 7px; }
+  .mm { margin-bottom: 9px; }
+  .mm:last-child { margin-bottom: 0; }
+  .mm-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .mm-label { font-size: 11.5px; color: var(--ink-2); }
+  .mm-val { font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .mtrack { position: relative; height: 6px; border-radius: 4px; background: var(--track); overflow: hidden; }
+  .mtrack::before, .mtrack::after { content: ""; position: absolute; top: 1px; bottom: 1px; width: 1px; background: var(--bg-2); opacity: .55; z-index: 1; }
+  .mtrack::before { left: 60%; } .mtrack::after { left: 85%; }
+  .mfill { height: 100%; border-radius: 4px; width: 0; background-image: linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,0)); transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+  .mfill.ok { background-color: var(--ok); } .mfill.warn { background-color: var(--warn); } .mfill.crit { background-color: var(--crit); }
+  .mreset { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); margin-top: 3px; }
+  @media (prefers-reduced-motion: reduce) { .mfill, .ring .rf { transition: none; } }
+
+  /* ============ SECCIONES ============ */
+  section { padding: 74px 0; }
+  section.alt { background: var(--bg-2); border-block: 1px solid var(--line); }
+  .sec-label {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 12px;
+  }
+  h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 16px; letter-spacing: -.025em; font-weight: 800; text-wrap: balance; }
+  .sec-lede { font-size: 17px; color: var(--ink-2); max-width: 62ch; margin: 0 0 36px; }
+
+  /* trust strip */
+  .trust { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+  .trust div { padding: 22px 18px; border-left: 1px solid var(--line); }
+  .trust div:first-child { border-left: none; }
+  .trust .n { font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .trust .d { font-size: 13px; color: var(--ink-2); margin-top: 5px; }
+  @media (max-width: 720px) { .trust { grid-template-columns: repeat(2, 1fr); } .trust div:nth-child(3) { border-left: none; } .trust div:nth-child(n+3) { border-top: 1px solid var(--line); } }
+
+  /* features grid */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .feat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; transition: border-color .2s ease, transform .2s ease; }
+  .feat:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); transform: translateY(-2px); }
+  .feat .ic {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); margin-bottom: 15px;
+  }
+  .feat .ic svg { width: 20px; height: 20px; }
+  .feat h3 { font-size: 16.5px; margin: 0 0 8px; letter-spacing: -.01em; }
+  .feat p { font-size: 14px; color: var(--ink-2); margin: 0; }
+
+  /* seguridad: tabla */
+  .sec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: start; }
+  @media (max-width: 860px) { .sec-grid { grid-template-columns: 1fr; } }
+  .cmp { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); font-size: 14px; }
+  .cmp table { border-collapse: collapse; width: 100%; }
+  .cmp th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); text-align: left; padding: 13px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .cmp td { padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+  .cmp tr:last-child td { border-bottom: none; }
+  .cmp td:first-child { color: var(--ink); font-weight: 600; width: 34%; }
+  .cmp .bad { color: var(--crit); }
+  .cmp .good { color: var(--ok); font-weight: 600; }
+  .sec-points { display: flex; flex-direction: column; gap: 18px; }
+  .pt { display: grid; grid-template-columns: 30px 1fr; gap: 14px; }
+  .pt .tick { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); font-weight: 800; font-size: 14px; }
+  .pt h4 { margin: 0 0 3px; font-size: 15.5px; }
+  .pt p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .pt code { font-family: var(--mono); font-size: .85em; background: var(--surface-2); padding: 1.5px 6px; border-radius: 5px; }
+
+  /* escala de colores */
+  .scale { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+  @media (max-width: 720px) { .scale { grid-template-columns: 1fr; } }
+  .sc { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .sc .rng { font-family: var(--mono); font-size: 12.5px; font-weight: 700; margin-bottom: 10px; }
+  .sc .bar { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; margin-bottom: 12px; }
+  .sc .bar i { display: block; height: 100%; border-radius: 4px; background-image: linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,0)); }
+  .sc p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .sc.g .rng { color: var(--ok); } .sc.g .bar i { background-color: var(--ok); width: 38%; }
+  .sc.a .rng { color: var(--warn); } .sc.a .bar i { background-color: var(--warn); width: 72%; }
+  .sc.r .rng { color: var(--crit); } .sc.r .bar i { background-color: var(--crit); width: 93%; }
+
+  /* plataformas */
+  .plats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .plats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .plats { grid-template-columns: 1fr; } }
+  .plat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; }
+  .plat::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 3px; background: var(--pc); }
+  .plat h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 7px; font-size: 16px; }
+  .plat h3 i { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 18%, transparent); }
+  .plat p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .plat .src { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-top: 10px; word-break: break-all; }
+
+  /* custom services */
+  .code {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px 22px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+    overflow-x: auto; color: var(--ink-2);
+  }
+  .code .k { color: var(--accent); }
+  .code .s { color: var(--ok); }
+
+  /* FAQ */
+  .faq { display: flex; flex-direction: column; gap: 10px; max-width: 780px; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 20px; }
+  details[open] { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+  summary { cursor: pointer; font-weight: 650; font-size: 15.5px; padding: 16px 0; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-family: var(--mono); font-size: 18px; color: var(--accent); flex: none; transition: transform .2s ease; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { margin: 0 0 16px; font-size: 14.5px; color: var(--ink-2); max-width: 68ch; }
+  details code { font-family: var(--mono); font-size: .85em; background: var(--surface-2); padding: 1.5px 6px; border-radius: 5px; }
+
+  /* about / escriba */
+  .about-box {
+    border: 1px solid var(--line); border-radius: 16px; padding: 34px 36px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), var(--surface) 55%);
+  }
+  .about-box p { max-width: 72ch; color: var(--ink-2); margin: 0 0 12px; }
+  .about-box p:last-child { margin: 0; }
+  .about-box strong { color: var(--ink); }
+
+  /* footer */
+  footer { border-top: 1px solid var(--line); padding: 40px 0 48px; background: var(--bg-2); }
+  .foot { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .foot-left { max-width: 44ch; }
+  .foot-left .logo { margin-bottom: 10px; }
+  .foot-left p { font-size: 13px; color: var(--ink-3); margin: 0; }
+  .foot-col { font-size: 13.5px; display: flex; flex-direction: column; gap: 8px; }
+  .foot-col b { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); margin-bottom: 3px; }
+  .foot-col a { color: var(--ink-2); }
+  .foot-col a:hover { color: var(--accent); }
+  .foot-base { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .foot-base a { color: var(--ink-3); }
+  .foot-base a:hover { color: var(--accent); }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="#top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+      Token<b>You</b>
+    </a>
+    <div class="nav-links">
+      <a href="#seguridad">Seguridad</a>
+      <a href="#plataformas">Plataformas</a>
+      <a href="#colores">Medidores</a>
+      <a href="#custom">Servicios propios</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh-btn" href="https://github.com/diegoparras/tokenyou" target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero" id="top">
+  <div>
+    <div class="eyebrow">Extensión de Chrome · Open source · MIT</div>
+    <h1>Todos tus límites de IA, <em>en un solo lugar</em></h1>
+    <p class="lede">Claude, ChatGPT, Gemini, Grok y Perplexity te cortan cuando menos lo esperás. TokenYou te muestra cuánto usaste de cada ventana, cuándo se reinicia, y te avisa antes de chocar con el límite — sin leer jamás tus conversaciones.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/diegoparras/tokenyou#install-development" target="_blank" rel="noreferrer">Instalar desde GitHub</a>
+      <a class="btn btn-ghost" href="https://github.com/diegoparras/tokenyou" target="_blank" rel="noreferrer">Ver el código</a>
+      <span class="cta-note">Próximamente en Chrome Web Store · Instalación manual disponible hoy</span>
+    </div>
+  </div>
+
+  <!-- Mockup animado del popup real -->
+  <div class="mock" aria-hidden="true">
+    <div class="mock-head">
+      <span class="mock-brand">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+        Token<b>You</b>
+      </span>
+      <svg class="ring" viewBox="0 0 36 36">
+        <circle class="rt" cx="18" cy="18" r="15"/>
+        <circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="0 95"/>
+        <text x="18" y="21.5">90</text>
+      </svg>
+    </div>
+    <div class="mcard" style="--pc:#D97757">
+      <div class="mcard-head"><span class="mdot"></span><span class="mname">Claude</span><span class="mchip">Max 20x</span></div>
+      <div class="mm"><div class="mm-row"><span class="mm-label">Sesión (5 h)</span><span class="mm-val">33%</span></div><div class="mtrack"><div class="mfill ok" data-w="33"></div></div><div class="mreset">reinicia en 2 h 05 m</div></div>
+      <div class="mm"><div class="mm-row"><span class="mm-label">Semana · Fable</span><span class="mm-val">64%</span></div><div class="mtrack"><div class="mfill warn" data-w="64"></div></div><div class="mreset">reinicia en 3 d 0 h</div></div>
+      <div class="mm"><div class="mm-row"><span class="mm-label">Uso extra (mes)</span><span class="mm-val">22%</span></div><div class="mtrack"><div class="mfill ok" data-w="22"></div></div><div class="mreset">US$ 21,84 / US$ 100,00</div></div>
+    </div>
+    <div class="mcard" style="--pc:#8A93A6">
+      <div class="mcard-head"><span class="mdot"></span><span class="mname">Grok</span></div>
+      <div class="mm"><div class="mm-row"><span class="mm-label">Ventana de 4 h</span><span class="mm-val">90%</span></div><div class="mtrack"><div class="mfill crit" data-w="90"></div></div><div class="mreset">quedan 1 de 10</div></div>
+    </div>
+    <div class="mcard" style="--pc:#4E8CF9">
+      <div class="mcard-head"><span class="mdot"></span><span class="mname">Gemini</span></div>
+      <div class="mm"><div class="mm-row"><span class="mm-label">Semanal</span><span class="mm-val">1%</span></div><div class="mtrack"><div class="mfill ok" data-w="1"></div></div><div class="mreset">reinicia en 4 d 5 h</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap reveal">
+  <div class="trust">
+    <div><div class="n">0</div><div class="d">sitios con acceso al instalar — cada plataforma se activa una por una</div></div>
+    <div><div class="n">0</div><div class="d">código ejecutado en tus páginas, en cualquier plataforma, siempre</div></div>
+    <div><div class="n">0</div><div class="d">telemetría, analytics, servidores propios o dependencias</div></div>
+    <div><div class="n">2</div><div class="d">permisos totales en el manifest: <code style="font-family:var(--mono)">storage</code> y <code style="font-family:var(--mono)">alarms</code></div></div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-label reveal">Qué hace</div>
+    <h2 class="reveal">Tu tablero de instrumentos para la IA</h2>
+    <p class="sec-lede reveal">Cada plataforma tiene sus propias ventanas — sesiones de 5 horas, topes semanales, créditos, búsquedas restantes. TokenYou las normaliza en un solo panel legible de un vistazo.</p>
+    <div class="grid">
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+        <h3>Medidores reales, no estimaciones</h3>
+        <p>Lee el mismo dato de cuota que cada plataforma le muestra a su propia interfaz: porcentaje exacto usado y hora de reinicio, por ventana y por modelo.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <h3>Cuenta regresiva de cada reset</h3>
+        <p>"Reinicia en 2 h 05 m" al lado de cada barra. El badge del ícono muestra tu peor medidor con su color — verde, ámbar o rojo — sin abrir nada.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>Mostrá solo lo que te importa</h3>
+        <p>Ocultá los medidores que no usás con un click. Los ocultos desaparecen del panel y del badge, así el número que ves siempre es el que te afecta.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg></div>
+        <h3>Claude Code incluido gratis</h3>
+        <p>El pool de límites de Anthropic es compartido: el mismo medidor de claude.ai refleja también lo que consumís desde Claude Code y la app de escritorio.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+        <h3>Agregá tus propios servicios</h3>
+        <p>¿Usás Cursor, Copilot u otra herramienta con cuota? Definila como JSON en 30 segundos, sin tocar el código de la extensión, y aparece como una plataforma más.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z"/></svg></div>
+        <h3>Liviana de verdad</h3>
+        <p>~30 KB de código, cero frameworks, cero build. El service worker duerme entre refrescos: consumo casi nulo de CPU y memoria.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="seguridad">
+  <div class="wrap">
+    <div class="sec-label reveal">Seguridad</div>
+    <h2 class="reveal">Diseñada para que no tengas que confiar en nosotros</h2>
+    <p class="sec-lede reveal">Los trackers de uso conviven con lo más sensible de tu navegador: tus conversaciones con la IA y tus sesiones autenticadas. En 2025 se detectaron extensiones "de IA" con cientos de miles de usuarios exfiltrando conversaciones completas. TokenYou se construyó contra ese escenario.</p>
+    <div class="sec-grid">
+      <div class="cmp reveal">
+        <table>
+          <thead><tr><th></th><th>Tracker típico</th><th>TokenYou</th></tr></thead>
+          <tbody>
+            <tr><td>Acceso al instalar</td><td class="bad">Todos los sitios objetivo</td><td class="good">Ninguno</td></tr>
+            <tr><td>Permiso de cookies</td><td class="bad">Frecuente</td><td class="good">Nunca</td></tr>
+            <tr><td>Código en tus páginas</td><td class="bad">Interceptores / scraping</td><td class="good">Cero, en todas</td></tr>
+            <tr><td>Tus conversaciones</td><td class="bad">Visibles para la extensión</td><td class="good">Inaccesibles por diseño</td></tr>
+            <tr><td>Telemetría</td><td class="bad">Analytics, heartbeats</td><td class="good">Cero tráfico a terceros</td></tr>
+            <tr><td>Código</td><td class="bad">Cerrado</td><td class="good">MIT + build reproducible</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-points">
+        <div class="pt reveal"><span class="tick">✓</span><div><h4>Incapacidad arquitectónica</h4><p>TokenYou no "promete" no leer tus chats: <strong style="color:var(--ink)">no puede</strong>. Ningún script corre dentro de ninguna página. Solo hace fetches en segundo plano al endpoint de cuota de cada plataforma y lee números.</p></div></div>
+        <div class="pt reveal"><span class="tick">✓</span><div><h4>Tu sesión nunca se toca</h4><p>Las peticiones son same-origin: el navegador adjunta la sesión por su cuenta. La extensión no tiene permiso <code>cookies</code> y no puede ver la credencial.</p></div></div>
+        <div class="pt reveal"><span class="tick">✓</span><div><h4>Permiso por plataforma, revocable</h4><p>Recién instalada, TokenYou no accede a ningún sitio. Activás Claude, ChatGPT o la que uses, una por una, y podés quitar cualquiera cuando quieras.</p></div></div>
+        <div class="pt reveal"><span class="tick">✓</span><div><h4>Verificable, no solo auditable</h4><p>El paquete se genera con <code>git archive</code> desde un commit etiquetado: mismo commit, mismo zip, hash publicado. Cualquiera comprueba que lo instalado es exactamente este código.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plataformas">
+  <div class="wrap">
+    <div class="sec-label reveal">Plataformas</div>
+    <h2 class="reveal">Cinco de fábrica, infinitas por definición</h2>
+    <p class="sec-lede reveal">Cada plataforma es un adaptador aislado calibrado contra respuestas reales. Si una cambia su API interna, solo esa se degrada a "no disponible" — el resto sigue funcionando.</p>
+    <div class="plats">
+      <div class="plat reveal" style="--pc:#D97757"><h3><i></i>Claude</h3><p>Sesión de 5 h, tope semanal global y por modelo, y gasto de uso extra en dólares. Cubre también Claude Code y la app de escritorio.</p><span class="src">/api/organizations/{org}/usage</span></div>
+      <div class="plat reveal" style="--pc:#10A37F"><h3><i></i>ChatGPT</h3><p>Ventana de 5 h y tope semanal con porcentaje exacto y hora de reset, más el plan detectado (Free / Plus / Pro).</p><span class="src">/backend-api/wham/usage</span></div>
+      <div class="plat reveal" style="--pc:#4E8CF9"><h3><i></i>Gemini</h3><p>Uso de cómputo actual y semanal — el mismo dato real que muestra la página de uso de Google, leído de su RPC interno.</p><span class="src">batchexecute · jSf9Qc</span></div>
+      <div class="plat reveal" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Consultas restantes sobre el total de cada ventana rodante, por tipo de request.</p><span class="src">/rest/rate-limits</span></div>
+      <div class="plat reveal" style="--pc:#26B8CE"><h3><i></i>Perplexity</h3><p>Búsquedas Pro, Research, Labs y agénticas restantes de tu plan.</p><span class="src">/rest/rate-limit/all</span></div>
+      <div class="plat reveal" style="--pc:#2DD4BF"><h3><i></i>Los tuyos</h3><p>Cursor, GitHub Copilot, dashboards internos: cualquier servicio con un endpoint JSON de uso se agrega desde la página de opciones.</p><span class="src">servicios personalizados →</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="colores">
+  <div class="wrap">
+    <div class="sec-label reveal">Cómo leer los medidores</div>
+    <h2 class="reveal">Verde, ámbar, rojo — y dos marcas en cada barra</h2>
+    <p class="sec-lede reveal">Todos los medidores usan la misma escala semántica, y cada barra lleva dos marcas de umbral fijas (en 60% y 85%) para que veas cuánto te falta para la próxima zona. El badge del ícono toma el color de tu peor medidor visible.</p>
+    <div class="scale">
+      <div class="sc g reveal"><div class="rng">0 – 59% · verde</div><div class="bar"><i></i></div><p>Zona cómoda. Usá con libertad: tenés margen de sobra en esta ventana.</p></div>
+      <div class="sc a reveal"><div class="rng">60 – 84% · ámbar</div><div class="bar"><i></i></div><p>Zona de atención. Conviene dosificar o mirar cuánto falta para el reset antes de una tarea larga.</p></div>
+      <div class="sc r reveal"><div class="rng">85 – 100% · rojo</div><div class="bar"><i></i></div><p>Zona crítica. Estás por chocar con el límite: guardá lo importante o cambiá de plataforma.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="custom">
+  <div class="wrap">
+    <div class="sec-label reveal">Servicios personalizados</div>
+    <h2 class="reveal">Tu herramienta no está. Agregala en 30 segundos.</h2>
+    <p class="sec-lede reveal">Para usuarios avanzados: definí cualquier servicio con endpoint JSON de uso como una entrada declarativa — el origen, la URL (obligatoriamente del mismo host) y rutas de puntos hacia los números. El botón <strong style="color:var(--ink)">Probar</strong> pide el permiso y te muestra exactamente qué se leyó antes de confiar en el medidor.</p>
+    <div class="code reveal"><pre style="margin:0">{
+  <span class="k">"id"</span>: <span class="s">"copilot"</span>,
+  <span class="k">"name"</span>: <span class="s">"GitHub Copilot"</span>,
+  <span class="k">"origin"</span>: <span class="s">"https://github.com/*"</span>,
+  <span class="k">"url"</span>: <span class="s">"https://github.com/settings/billing/copilot_usage_card?…&amp;unit_type=1"</span>,
+  <span class="k">"meters"</span>: [{
+    <span class="k">"id"</span>: <span class="s">"premium"</span>,
+    <span class="k">"label"</span>: <span class="s">"Premium requests"</span>,
+    <span class="k">"usedPath"</span>: <span class="s">"netQuantity"</span>,
+    <span class="k">"totalPath"</span>: <span class="s">"userPremiumRequestEntitlement"</span>
+  }]
+}</pre></div>
+  </div>
+</section>
+
+<section class="alt" id="faq">
+  <div class="wrap">
+    <div class="sec-label reveal">FAQ</div>
+    <h2 class="reveal">Preguntas frecuentes</h2>
+    <div class="faq" style="margin-top:32px">
+      <details class="reveal"><summary>¿TokenYou puede leer mis conversaciones?</summary><p>No, y no por una promesa sino por arquitectura: ningún código de TokenYou corre dentro de ninguna página. Solo hace peticiones en segundo plano al endpoint de cuota de cada plataforma — el mismo que esa plataforma usa para mostrarte tu propio uso — y lee números: porcentajes, restantes y horas de reset.</p></details>
+      <details class="reveal"><summary>¿Por qué me pide permiso para cada sitio por separado?</summary><p>Principio de mínimo privilegio: recién instalada, TokenYou no tiene acceso a ningún sitio. Cada plataforma que activás es un permiso individual que Chrome te muestra y que podés revocar en cualquier momento con el botón "Quitar". Si nunca activás una plataforma, la extensión jamás podrá tocarla.</p></details>
+      <details class="reveal"><summary>¿Manda algún dato a algún servidor?</summary><p>No existe ningún canal de salida: cero telemetría, cero analytics, cero servidores propios, cero dependencias externas. El único tráfico de red es hacia las plataformas que vos activaste, y únicamente a sus endpoints de cuota. Todo se guarda en <code>storage.local</code> de tu navegador.</p></details>
+      <details class="reveal"><summary>¿Cómo verifico que lo publicado es este código?</summary><p>El paquete se genera con <code>git archive</code> desde un commit etiquetado, lo que lo hace byte-reproducible: cloná el repo, ejecutá el mismo comando y compará el hash SHA-256 con el publicado en cada release. El CI de GitHub lo genera automáticamente.</p></details>
+      <details class="reveal"><summary>¿Qué pasa cuando una plataforma cambia su API interna?</summary><p>Los endpoints de cuota no son contratos públicos y pueden cambiar. Cada plataforma vive en un adaptador aislado: si una rompe, esa card muestra "no disponible" y el resto sigue funcionando. Al ser open source, el arreglo suele llegar en días — y podés reportarlo o contribuirlo vos en GitHub.</p></details>
+      <details class="reveal"><summary>¿Sirve para trackear Claude Code, Cursor o Copilot?</summary><p>Claude Code sí, automáticamente: comparte el pool de límites con claude.ai, así que el medidor de Claude ya lo incluye. Cursor y GitHub Copilot se agregan como servicios personalizados desde la página de opciones (hay plantillas listas), leyendo sus dashboards web con tu sesión.</p></details>
+      <details class="reveal"><summary>¿Es gratis? ¿Cuál es el modelo de negocio?</summary><p>Gratis y MIT. No hay modelo de negocio oculto: no se venden datos (no hay datos), no hay premium, no hay cuentas. Es software de la comunidad, parte del Ecosistema Escriba.</p></details>
+      <details class="reveal"><summary>¿Ayuda a saltarse los límites de las plataformas?</summary><p>No. TokenYou es un monitor de solo lectura de tu propia cuota — te muestra lo que las plataformas ya te muestran, mejor organizado. No elude, extiende ni manipula ningún límite, en línea con las políticas del Chrome Web Store.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="sec-label reveal">Acerca de</div>
+    <h2 class="reveal">Parte del Ecosistema Escriba</h2>
+    <div class="about-box reveal">
+      <p><strong>TokenYou es parte del Ecosistema Escriba</strong>, una familia de herramientas abiertas construidas sobre una misma convicción: el software que convive con tus datos más sensibles debe ser verificable, no solo confiable. Cada pieza del ecosistema es open source, procesa localmente todo lo que puede y trata los permisos como algo que se gana, no que se asume.</p>
+      <p>TokenYou nació de una frustración simple — chocar con el límite de Claude a mitad de una idea — y de una observación incómoda: las extensiones que resolvían esto pedían más acceso del que necesitaban, con código cerrado, junto a las conversaciones más valiosas que tenemos con una IA. La respuesta fue construir el medidor que queríamos usar: uno que no puede espiar ni aunque quisiera.</p>
+      <p>Conocé el resto del ecosistema en <a href="https://getescriba.com" rel="noreferrer">getescriba.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="foot-left">
+        <a class="logo" href="#top">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+          Token<b>You</b>
+        </a>
+        <p>Todos tus límites de IA en un solo lugar. Solo local, cero telemetría, ningún código en tus páginas. Open source bajo licencia MIT.</p>
+      </div>
+      <div class="foot-col">
+        <b>Proyecto</b>
+        <a href="https://github.com/diegoparras/tokenyou" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/diegoparras/tokenyou/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Política de privacidad</a>
+        <a href="https://github.com/diegoparras/tokenyou/blob/main/LICENSE" target="_blank" rel="noreferrer">Licencia MIT</a>
+        <a href="https://github.com/diegoparras/tokenyou/issues" target="_blank" rel="noreferrer">Reportar un problema</a>
+      </div>
+      <div class="foot-col">
+        <b>Secciones</b>
+        <a href="#seguridad">Seguridad</a>
+        <a href="#plataformas">Plataformas</a>
+        <a href="#custom">Servicios personalizados</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="foot-col">
+        <b>Ecosistema</b>
+        <a href="https://getescriba.com" rel="noreferrer">Escriba</a>
+        <a href="#about">Acerca de TokenYou</a>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>© 2026 Diego Parras y contribuidores · MIT</span>
+      <span>TokenYou es parte del <a href="https://getescriba.com" rel="noreferrer">Ecosistema Escriba</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Animación del mockup: barras y anillo crecen al entrar en viewport
+  const mock = document.querySelector('.mock');
+  const animateMock = () => {
+    mock.querySelectorAll('.mfill').forEach((f) => { f.style.width = f.dataset.w + '%'; });
+    const rf = mock.querySelector('.rf');
+    const C = 2 * Math.PI * 15;
+    rf.style.strokeDasharray = (90 / 100) * C + ' ' + C;
+  };
+  // Reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add('in');
+      if (e.target === mock) animateMock();
+      io.unobserve(e.target);
+    }
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach((n) => io.observe(n));
+  io.observe(mock);
+  // Si ya está visible al cargar (hero), animar de entrada
+  requestAnimationFrame(() => requestAnimationFrame(animateMock));
+</script>
+</body>
+</html>

@@ -2,6 +2,8 @@
 
 **All your AI usage limits in one place. Verifiably private.**
 
+Website: [getescriba.com/tokenyou](https://getescriba.com/tokenyou) · Part of the [Escriba ecosystem](https://getescriba.com).
+
 TokenYou is a Chrome (MV3) extension that shows how much of your usage limits you've consumed on Claude, ChatGPT, Grok and Perplexity — session windows, weekly caps, remaining searches — with reset countdowns and a toolbar badge showing your most critical meter.
 
 It exists because this category has a trust problem: usage trackers run next to your AI conversations and your authenticated sessions, and most of them are closed-source, over-permissioned, or both. TokenYou is designed so you don't have to trust it.
