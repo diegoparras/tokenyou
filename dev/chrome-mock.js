@@ -37,10 +37,9 @@
     'snap.gemini': {
       platformId: 'gemini',
       ok: true,
-      approx: true,
       meters: [
-        { id: 'window5h', label: 'Ventana de 5 h', usedPct: null, resetsAt: null, used: 3 },
-        { id: 'week', label: 'Semanal', usedPct: null, resetsAt: null, used: 27 },
+        { id: 'session', label: 'Sesión (5 h)', usedPct: 0, resetsAt: now + 4 * H },
+        { id: 'weekly', label: 'Semanal', usedPct: 1, resetsAt: now + 4 * 24 * H },
       ],
       fetchedAt: now - 40 * 1000,
     },
@@ -94,14 +93,16 @@
 
   window.chrome = {
     i18n: {
+      // Reproduce el algoritmo real: $NOMBRE$ en el mensaje → placeholders[nombre].content ($1..$9 → args)
       getMessage(key, args) {
         const entry = messages[key];
         if (!entry) return '';
         let text = entry.message;
         const list = Array.isArray(args) ? args : args !== undefined ? [args] : [];
-        list.forEach((arg, i) => {
-          text = text.split(`$${i + 1}`).join(String(arg));
-        });
+        for (const [name, ph] of Object.entries(entry.placeholders || {})) {
+          const value = String(ph.content || '').replace(/\$(\d)/g, (_, d) => String(list[d - 1] ?? ''));
+          text = text.replace(new RegExp('\\$' + name + '\\$', 'gi'), value);
+        }
         return text;
       },
     },

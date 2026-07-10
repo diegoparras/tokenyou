@@ -13,7 +13,6 @@ import { getCustomServices, customToAdapter } from './custom.js';
  * @property {string} origin
  * @property {string} home
  * @property {() => Promise<import('../lib/quota.js').Snapshot>} fetchSnapshot
- * @property {object[]} [contentScripts] Solo plataformas sin endpoint (script en la página).
  * @property {boolean} [custom]          Servicio definido por el usuario.
  */
 

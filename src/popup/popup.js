@@ -206,37 +206,21 @@ function meterEl(m, opts) {
   return box;
 }
 
-/** ¿El adaptador necesita un script en la página (no hay endpoint de cuota)? */
-/** @param {import('../adapters/index.js').Adapter} adapter */
-function needsPageScript(adapter) {
-  return Boolean(adapter.contentScripts);
-}
-
 /** @param {import('../adapters/index.js').Adapter} adapter */
 function addRow(adapter) {
   const row = el('div', 'add-row');
   const left = el('div', 'add-left');
   const nameLine = el('div', 'name-line');
   nameLine.append(el('span', 'name', adapter.name));
-  nameLine.append(
-    el(
-      'span',
-      'chip ' + (needsPageScript(adapter) ? 'tier-script' : 'tier-endpoint'),
-      needsPageScript(adapter) ? t('tierPageScript') : t('tierEndpoint')
-    )
-  );
+  nameLine.append(el('span', 'chip tier-endpoint', t('tierEndpoint')));
   if (adapter.custom) nameLine.append(el('span', 'chip', t('customChip')));
   left.append(nameLine);
   left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
-  if (needsPageScript(adapter)) left.append(el('span', 'tier-note', t('pageScriptNote')));
   row.append(left);
 
   const btn = /** @type {HTMLButtonElement} */ (el('button', 'enable-btn', t('enable')));
   btn.addEventListener('click', async () => {
-    const ok = await chrome.permissions.request({
-      origins: [adapter.origin],
-      permissions: needsPageScript(adapter) ? ['scripting'] : [],
-    });
+    const ok = await chrome.permissions.request({ origins: [adapter.origin] });
     if (ok) {
       await render();
       await requestRefresh();
@@ -249,15 +233,6 @@ function addRow(adapter) {
 /** @param {import('../adapters/index.js').Adapter} adapter */
 async function removePlatform(adapter) {
   await chrome.permissions.remove({ origins: [adapter.origin] });
-  if (needsPageScript(adapter)) {
-    // Devolver también "scripting" si ya ninguna plataforma activa lo necesita.
-    const [granted, adapters] = await Promise.all([chrome.permissions.getAll(), getAllAdapters()]);
-    const origins = granted.origins ?? [];
-    const stillNeeded = adapters.some(
-      (a) => a.id !== adapter.id && needsPageScript(a) && origins.includes(a.origin)
-    );
-    if (!stillNeeded) await chrome.permissions.remove({ permissions: ['scripting'] });
-  }
   await chrome.storage.local.remove(`snap.${adapter.id}`);
   await render();
 }

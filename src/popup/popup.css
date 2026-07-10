@@ -204,8 +204,6 @@ section { padding: 8px 16px; }
 .add-row .name { font-weight: 600; font-size: 12.5px; }
 .add-row .host { font-family: var(--mono); font-size: 10px; color: var(--ink-3); display: block; }
 .tier-endpoint { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
-.tier-script { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
-.tier-note { display: block; font-size: 10.5px; color: var(--ink-3); margin-top: 3px; line-height: 1.4; }
 .enable-btn {
   border: 1px solid var(--accent);
   background: none;

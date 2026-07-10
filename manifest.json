@@ -5,7 +5,6 @@
   "version": "0.1.0",
   "default_locale": "en",
   "permissions": ["storage", "alarms"],
-  "optional_permissions": ["scripting"],
   "optional_host_permissions": [
     "https://claude.ai/*",
     "https://chatgpt.com/*",
