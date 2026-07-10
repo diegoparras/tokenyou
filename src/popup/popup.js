@@ -26,6 +26,9 @@ const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('c
 /** Plataformas con el panel "mostrar/ocultar medidores" abierto. @type {Set<string>} */
 const editing = new Set();
 
+/** true solo en el primer pintado (al abrir el popup): habilita animaciones de entrada. */
+let firstPaint = true;
+
 init();
 
 async function init() {
@@ -73,7 +76,15 @@ async function render() {
   const keys = enabled.map((a) => `snap.${a.id}`);
   const stored = await chrome.storage.local.get(keys);
 
-  $cards.replaceChildren(...enabled.map((a) => card(a, stored[`snap.${a.id}`], hidden)));
+  const cards = enabled.map((a, i) => {
+    const node = card(a, stored[`snap.${a.id}`], hidden);
+    if (firstPaint) {
+      node.classList.add('enter');
+      node.style.setProperty('--i', String(i));
+    }
+    return node;
+  });
+  $cards.replaceChildren(...cards);
   $empty.hidden = enabled.length > 0;
 
   $add.hidden = disabled.length === 0;
@@ -85,6 +96,7 @@ async function render() {
   $updated.textContent = newest ? agoLabel(newest) : '';
 
   renderOverall(worstPct(Object.values(stored), hidden));
+  firstPaint = false;
 }
 
 /** Anillo de estado global en el header: el peor medidor visible. @param {number|null} worst */
@@ -191,8 +203,16 @@ function meterEl(m, opts) {
 
   if (m.usedPct !== null && m.usedPct !== undefined) {
     const track = el('div', 'track');
-    const fill = el('div', 'fill' + (m.usedPct >= 85 ? ' crit' : m.usedPct >= 60 ? ' warn' : ''));
-    fill.style.width = `${Math.min(100, m.usedPct)}%`;
+    const fill = el('div', 'fill ' + (m.usedPct >= 85 ? 'crit' : m.usedPct >= 60 ? 'warn' : 'ok'));
+    const target = `${Math.min(100, m.usedPct)}%`;
+    if (firstPaint) {
+      // Crece desde 0 al abrir el popup; en refrescos posteriores la transición
+      // de width anima el cambio de valor por sí sola.
+      fill.style.width = '0%';
+      requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = target; }));
+    } else {
+      fill.style.width = target;
+    }
     track.append(fill);
     box.append(track);
   }
