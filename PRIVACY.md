@@ -4,7 +4,7 @@
 
 - TokenYou has **no servers, no analytics, no telemetry, no heartbeat**. It makes zero network requests to anyone other than the AI platforms you explicitly enable.
 - When you enable a platform, TokenYou reads **only that platform's usage/quota endpoint** (numbers and reset times). It never reads, stores, or transmits your conversations, prompts, or personal data.
-- Gemini has no usage endpoint, so if (and only if) you enable it, TokenYou counts your sends locally: it detects that a prompt was sent and stores a timestamp plus the visible model name (e.g. "Flash"). It never reads the prompt or the response.
+- Gemini has no usage endpoint, so if (and only if) you enable it, TokenYou counts your sends locally: it detects that a prompt was sent and stores a timestamp plus the visible model name (e.g. "Flash"). It never reads the prompt or the response. Enabling Gemini is also the only time the optional `scripting` permission is requested; disabling Gemini returns it. All other platforms are read via their usage endpoint with **no code on the page at all**.
 - TokenYou never reads your cookies. Requests to a platform are same-origin fetches where your browser attaches the session automatically — the extension has no access to the credential itself.
 - All data (usage percentages, reset timestamps) is stored in `chrome.storage.local` on your device and never synced or uploaded.
 - The default installation requests access to **no websites at all**. Each platform is an optional permission you grant one by one and can revoke at any time.

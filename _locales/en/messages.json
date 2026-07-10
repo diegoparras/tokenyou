@@ -24,6 +24,9 @@
   "remainingOnly": { "message": "$1 left", "placeholders": { "1": { "content": "$1" } } },
   "sentCount": { "message": "$1 sent", "placeholders": { "1": { "content": "$1" } } },
   "approxChip": { "message": "local count" },
+  "tierEndpoint": { "message": "no page access" },
+  "tierPageScript": { "message": "on-page script" },
+  "pageScriptNote": { "message": "This platform has no usage endpoint, so enabling it adds a small script on its page that counts your sends. It emits an empty signal and never reads your chats." },
   "emptyTitle": { "message": "No platforms enabled yet" },
   "emptyBody": { "message": "Enable a platform below. TokenYou will only be able to read that site's usage numbers — never your conversations." },
   "footerNote": { "message": "Local-only · zero telemetry · open source" }

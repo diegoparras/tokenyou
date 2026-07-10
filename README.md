@@ -17,7 +17,15 @@ It exists because this category has a trust problem: usage trackers run next to 
 | Telemetry | Analytics, heartbeats | **Zero network traffic** except to platforms you enabled |
 | Code | Closed | MIT, this repo, **reproducible build** (`git archive`, hash published per release) |
 
-Manifest permissions, in full: `storage`, `alarms`, `scripting`. The `scripting` permission is used for exactly one thing: registering the opt-in Gemini send-counter (see below) on gemini.google.com **after** you grant that host — it has no effect on any other site.
+Manifest permissions, in full: `storage`, `alarms`. The `scripting` permission is **optional** and only requested if you enable Gemini (see below).
+
+### Two guarantee classes, stated honestly
+
+Most platforms expose a usage endpoint, and for those TokenYou offers the strong guarantee — **architectural incapability**: no code of ours ever runs inside the page, so the extension *cannot* see your conversations even in principle. It only fetches the quota endpoint.
+
+Gemini has no usage endpoint, so counting sends requires being present on the page — and any on-page script (ours or anyone's) *could* technically see page content. TokenYou's guarantee there is **behavioral and auditable** instead: a ~40-line script that emits an empty signal when the app sends a prompt, reads nothing else, and is plainly reviewable in this repo. Enabling Gemini also grants the optional `scripting` permission, scoped in practice to gemini.google.com; disabling Gemini returns it. The popup labels every platform with its class — "no page access" vs "on-page script" — so the choice is always informed and per-platform.
+
+Either way, the invariant that never changes: **there is no exfiltration path**. TokenYou has no servers and makes no network requests except to the platforms you enabled, so no data can leave your browser regardless of guarantee class.
 
 ## Platforms
 
@@ -29,7 +37,7 @@ Manifest permissions, in full: `storage`, `alarms`, `scripting`. The `scripting`
 | Perplexity | Remaining Pro / Research / Labs / Agentic searches | `GET /rest/rate-limit/all` |
 | Gemini (gemini.google.com) | Prompts sent in the last 5 h / 7 days (local count) | Send-counter content script — no quota endpoint exists |
 
-Gemini is the one platform without a usage endpoint, so TokenYou counts your sends locally: a page-world script watches for the app's own send request (`StreamGenerate`) and emits an **empty signal** — it never reads the request, your prompt, or the response. A bridge script records only a timestamp and the visible model name to local storage. That's the entire data flow, and it only exists if you enable Gemini. The card is marked "local count" because it can't see usage from other devices.
+Gemini is the one platform without a usage endpoint, so TokenYou counts your sends locally: a page-world script watches for the app's own send request (`StreamGenerate`) and emits an **empty signal** — it never reads the request, your prompt, or the response. A bridge script records only a timestamp and the visible model name to local storage. That's the entire data flow, and it only exists if you enable Gemini (which is also when the optional `scripting` permission is requested). The card is marked "local count" because it can't see usage from other devices.
 
 The other four are the platforms' own internal endpoints — the same data their web apps display. They are undocumented and can change; each adapter is isolated, so a breaking change degrades that one platform to "unavailable" while the rest keep working.
 

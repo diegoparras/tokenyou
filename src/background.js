@@ -45,6 +45,9 @@ async function syncAlarm() {
  * el usuario concedió ese host) y desregistra los de plataformas revocadas.
  */
 async function syncContentScripts() {
+  // "scripting" es opcional: sin él no hay nada registrado ni registrable.
+  const canScript = await chrome.permissions.contains({ permissions: ['scripting'] });
+  if (!canScript) return;
   const granted = await chrome.permissions.getAll();
   const origins = granted.origins ?? [];
   const registered = await chrome.scripting.getRegisteredContentScripts();

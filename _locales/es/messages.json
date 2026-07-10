@@ -24,6 +24,9 @@
   "remainingOnly": { "message": "quedan $1", "placeholders": { "1": { "content": "$1" } } },
   "sentCount": { "message": "$1 enviados", "placeholders": { "1": { "content": "$1" } } },
   "approxChip": { "message": "conteo local" },
+  "tierEndpoint": { "message": "sin acceso a la página" },
+  "tierPageScript": { "message": "script en la página" },
+  "pageScriptNote": { "message": "Esta plataforma no tiene endpoint de uso, así que activarla agrega un pequeño script en su página que cuenta tus envíos. Emite una señal vacía y nunca lee tus chats." },
   "emptyTitle": { "message": "Todavía no activaste plataformas" },
   "emptyBody": { "message": "Activá una plataforma abajo. TokenYou solo podrá leer los números de uso de ese sitio — nunca tus conversaciones." },
   "footerNote": { "message": "Solo local · cero telemetría · open source" }
