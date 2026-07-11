@@ -80,6 +80,7 @@
       fetchedAt: now - 40 * 1000,
     },
     'prefs.hiddenMeters': [],
+    'prefs.notify': { reset: true, threshold: 85 },
   };
 
   // Series sintéticas de historial para ver los sparklines en el preview.

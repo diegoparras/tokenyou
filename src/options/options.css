@@ -50,6 +50,16 @@ h1 { font-size: 20px; margin: 0; }
   margin-bottom: 22px;
 }
 
+.notif { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 26px; background: var(--surface); }
+.notif h2 { font-size: 16px; margin: 0 0 6px; letter-spacing: -0.01em; }
+.notif .intro { margin-bottom: 14px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; cursor: pointer; }
+.row input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.notif-opts { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 4px; }
+.notif-opts.off { opacity: 0.45; pointer-events: none; }
+.row.sub { font-size: 13.5px; color: var(--ink-2); padding: 6px 0; }
+.section-h { font-size: 16px; margin: 0 0 6px; letter-spacing: -0.01em; }
+
 .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
 .toolbar .spacer { flex: 1; }
 .btn {

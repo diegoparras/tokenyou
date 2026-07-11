@@ -3,6 +3,7 @@ import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
 import { getHiddenMeters } from './lib/prefs.js';
 import { recordSnapshot } from './lib/history.js';
+import { maybeNotify } from './lib/notify.js';
 
 const ALARM = 'tokenyou-refresh';
 const REFRESH_MINUTES = 5;
@@ -16,6 +17,18 @@ chrome.permissions.onRemoved.addListener(() => { void syncAlarm(); void pruneRev
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM) void refreshAll();
 });
+
+// Click en una notificación → abrir la plataforma correspondiente.
+// El namespace solo existe si el permiso opcional fue concedido.
+if (chrome.notifications?.onClicked) {
+  chrome.notifications.onClicked.addListener(async (id) => {
+    const pid = id.split(':')[1];
+    const adapters = await getAllAdapters();
+    const a = adapters.find((x) => x.id === pid);
+    if (a) await chrome.tabs.create({ url: a.home });
+    chrome.notifications.clear(id);
+  });
+}
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'refresh') {
@@ -67,8 +80,10 @@ async function refreshOne(adapter) {
       fetchedAt: Date.now(),
     };
   }
+  const before = await chrome.storage.local.get(`snap.${adapter.id}`);
   await chrome.storage.local.set({ [`snap.${adapter.id}`]: snap });
   await recordSnapshot(snap);
+  await maybeNotify(adapter, before[`snap.${adapter.id}`], snap);
 }
 
 /** Borra snapshots de plataformas cuyo permiso se revocó. */

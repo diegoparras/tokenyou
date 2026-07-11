@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>TokenYou — dev preview (opciones)</title>
+  <base href="/src/options/">
+  <link rel="stylesheet" href="/src/options/options.css">
+</head>
+<body>
+  <script>
+    (async () => {
+      const mock = await fetch('/dev/chrome-mock.js').then((r) => r.text());
+      (0, eval)(mock);
+      const html = await fetch('/src/options/options.html').then((r) => r.text());
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nodes = [...doc.body.childNodes].filter((n) => n.nodeName !== 'SCRIPT');
+      document.body.append(...nodes.map((n) => document.importNode(n, true)));
+      const s = document.createElement('script');
+      s.type = 'module';
+      s.src = '/src/options/options.js';
+      document.body.append(s);
+    })();
+  </script>
+</body>
+</html>

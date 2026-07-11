@@ -5,6 +5,7 @@ import {
   validateService,
   customToAdapter,
 } from '../adapters/custom.js';
+import { getNotifyPrefs, setNotifyPrefs } from '../lib/notify.js';
 
 const t = (/** @type {string} */ key) => chrome.i18n.getMessage(key) || key;
 
@@ -32,11 +33,14 @@ init();
 async function init() {
   document.title = t('optTitle');
   setText('title', t('optTitle'));
+  setText('custom-title', t('optTitle'));
   setText('intro', t('optIntro'));
   setText('security-note', t('optSecurityNote'));
   setText('template-btn', t('optTemplate'));
   setText('test-btn', t('optTest'));
   setText('save-btn', t('optSave'));
+
+  await initNotifications();
 
   const services = await getCustomServices();
   $editor.value = JSON.stringify(services, null, 2);
@@ -137,6 +141,47 @@ function showResult(kind, text) {
   $result.hidden = false;
   $result.className = kind;
   $result.textContent = text;
+}
+
+/** Sección de notificaciones: permiso opcional + preferencias. */
+async function initNotifications() {
+  setText('notif-title', t('notifTitle'));
+  setText('notif-intro', t('notifIntro'));
+  setText('notif-enable-lbl', t('notifEnable'));
+  setText('notif-reset-lbl', t('notifOnReset'));
+  setText('notif-th-lbl', t('notifOnThreshold'));
+
+  const $enable = /** @type {HTMLInputElement} */ (document.getElementById('notif-enable'));
+  const $reset = /** @type {HTMLInputElement} */ (document.getElementById('notif-reset'));
+  const $th = /** @type {HTMLInputElement} */ (document.getElementById('notif-th'));
+  const $opts = document.getElementById('notif-opts');
+
+  const granted = await chrome.permissions.contains({ permissions: ['notifications'] });
+  const prefs = await getNotifyPrefs();
+  $enable.checked = granted;
+  $reset.checked = prefs.reset;
+  $th.checked = prefs.threshold !== null;
+  $opts?.classList.toggle('off', !granted);
+
+  $enable.addEventListener('change', async () => {
+    if ($enable.checked) {
+      const ok = await chrome.permissions.request({ permissions: ['notifications'] });
+      if (!ok) { $enable.checked = false; return; }
+      $reset.checked = true;
+      $th.checked = true;
+      await setNotifyPrefs({ reset: true, threshold: 85 });
+      $opts?.classList.remove('off');
+    } else {
+      await chrome.permissions.remove({ permissions: ['notifications'] });
+      await setNotifyPrefs({ reset: false, threshold: null });
+      $reset.checked = false;
+      $th.checked = false;
+      $opts?.classList.add('off');
+    }
+  });
+  const save = () => setNotifyPrefs({ reset: $reset.checked, threshold: $th.checked ? 85 : null });
+  $reset.addEventListener('change', save);
+  $th.addEventListener('change', save);
 }
 
 /** @param {string} id @param {string} text */
