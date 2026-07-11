@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TokenYou — mockup historial</title>
+<style>
+  :root {
+    --bg: #FAFBFC; --surface: #FFFFFF; --surface-2: #F1F4F6;
+    --ink: #1A2530; --ink-2: #4A5A68; --ink-3: #7B8A96; --line: #DDE4E9;
+    --accent: #0F766E; --ok: #15803D; --warn: #B45309; --crit: #B91C1C; --track: #E4E9ED;
+    --mono: "Cascadia Code","SF Mono",ui-monospace,Consolas,monospace;
+    --sans: system-ui,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0E1620; --surface:#141F2B; --surface-2:#1B2836;
+      --ink:#E8EEF3; --ink-2:#A8B8C4; --ink-3:#6E8090; --line:#263644;
+      --accent:#2DD4BF; --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171; --track:#23313F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#6b7680; font-family:var(--sans); display:flex; gap:44px; justify-content:center; align-items:flex-start; padding:40px 24px 60px; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .cap { font-family:var(--mono); font-size:12px; color:#e8eef3; letter-spacing:.02em; max-width:360px; text-align:center; }
+  .cap b { color:#7fe9dc; }
+  .device { width:360px; background:var(--bg); border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.35); border-top:2px solid var(--accent); overflow:hidden; }
+
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; letter-spacing:-.01em; }
+  .brand svg { width:20px; height:20px; color:var(--accent); }
+  .head-r { display:flex; align-items:center; gap:8px; }
+  .updated { font-family:var(--mono); font-size:10px; color:var(--ink-3); }
+  .ring { width:30px; height:30px; }
+  .ring circle { fill:none; stroke-width:5; }
+  .ring .t { stroke:var(--track); } .ring .f { stroke:var(--warn); stroke-linecap:round; }
+  .ring text { font-family:var(--mono); font-size:12px; font-weight:600; fill:var(--ink); text-anchor:middle; }
+  .ibtn { width:28px; height:28px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink-2); display:grid; place-items:center; }
+  .ibtn svg { width:14px; height:14px; }
+
+  main { display:flex; flex-direction:column; gap:10px; padding:4px 16px 16px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; box-shadow:0 1px 2px rgba(20,40,60,.04),0 4px 12px rgba(20,40,60,.05); }
+  .card-head { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .pname { font-weight:650; font-size:13.5px; }
+  .chip { font-family:var(--mono); font-size:9.5px; background:var(--surface-2); color:var(--ink-2); border-radius:20px; padding:2px 8px; }
+  .sp { flex:1; }
+  .gear { color:var(--ink-3); }
+
+  .meter { margin-bottom:11px; } .meter:last-child { margin-bottom:0; }
+  .m-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .m-label { font-size:12px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m-row .gap { flex:1; }
+  .spark { flex:none; }
+  .m-val { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .track { position:relative; height:7px; border-radius:4px; background:var(--track); overflow:hidden; }
+  .track::before,.track::after { content:""; position:absolute; top:1px; bottom:1px; width:1px; background:var(--bg); opacity:.55; }
+  .track::before { left:60%; } .track::after { left:85%; }
+  .fill { height:100%; border-radius:4px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .fill.ok{background-color:var(--ok);} .fill.warn{background-color:var(--warn);} .fill.crit{background-color:var(--crit);}
+  .m-reset { font-family:var(--mono); font-size:10px; color:var(--ink-3); margin-top:4px; }
+
+  /* ---- vista historial ---- */
+  .hi-head { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+  .hi-head .back { width:28px; height:28px; border:1px solid var(--line); border-radius:8px; display:grid; place-items:center; color:var(--ink-2); }
+  .hi-head .back svg { width:15px; height:15px; }
+  .hi-title { font-weight:700; font-size:15px; letter-spacing:-.01em; }
+  .hbody { padding:2px 16px 18px; }
+  .selector { display:flex; gap:8px; margin-bottom:14px; }
+  .sel { flex:1; border:1px solid var(--line); border-radius:9px; background:var(--surface); padding:9px 12px; font-size:12.5px; color:var(--ink); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sel .dd { color:var(--ink-3); font-size:10px; }
+  .sel .lead { display:flex; align-items:center; gap:7px; }
+  .sel .dot { box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .seg { display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; flex:none; }
+  .seg span { padding:9px 12px; font-size:12px; color:var(--ink-2); background:var(--surface); }
+  .seg span.on { background:var(--accent); color:var(--bg); font-weight:600; }
+
+  .peakline { font-family:var(--mono); font-size:11px; color:var(--ink-2); margin:2px 0 14px; display:flex; align-items:center; gap:7px; }
+  .peakline b { color:var(--pc); }
+
+  .heat { display:grid; grid-template-columns:22px repeat(12,1fr); gap:3px; align-items:center; }
+  .heat .hlab { font-family:var(--mono); font-size:9px; color:var(--ink-3); text-align:right; padding-right:2px; }
+  .heat .cell { aspect-ratio:1; border-radius:3px; background:var(--track); }
+  .hours { display:grid; grid-template-columns:22px repeat(12,1fr); gap:3px; margin-top:6px; }
+  .hours span { font-family:var(--mono); font-size:8.5px; color:var(--ink-3); text-align:center; }
+  .legend { display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-top:14px; font-family:var(--mono); font-size:9.5px; color:var(--ink-3); }
+  .legend .sw { display:flex; gap:2px; }
+  .legend .sw i { width:12px; height:12px; border-radius:3px; }
+  .totals { display:flex; gap:10px; margin-top:16px; }
+  .tot { flex:1; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:11px 13px; }
+  .tot .k { font-size:10.5px; color:var(--ink-3); font-family:var(--mono); }
+  .tot .v { font-size:17px; font-weight:700; color:var(--ink); margin-top:3px; font-variant-numeric:tabular-nums; }
+  .tot .v b { color:var(--pc); font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="device" id="d1">
+    <header>
+      <span class="brand"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
+      <span class="head-r">
+        <span class="updated">actualizado recién</span>
+        <svg class="ring" viewBox="0 0 36 36"><circle class="t" cx="18" cy="18" r="15"/><circle class="f" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="51.8 94.2"/><text x="18" y="21.5">55</text></svg>
+      </span>
+    </header>
+    <main id="cards"></main>
+  </div>
+  <div class="cap"><b>Vista principal</b> — cada medidor lleva una mini-tendencia (sparkline) de sus últimas 24 h. Multi-modelo resuelto: una línea por medidor.</div>
+</div>
+
+<div class="col">
+  <div class="device" id="d2">
+    <div class="hi-head">
+      <span class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></span>
+      <span class="hi-title">Historial</span>
+    </div>
+    <div class="hbody">
+      <div class="selector">
+        <div class="sel" style="--pc:#D97757"><span class="lead"><span class="dot"></span>Claude · Semana (todos)</span><span class="dd">▾</span></div>
+      </div>
+      <div class="seg"><span class="on">Semana</span><span>Mes</span></div>
+      <div class="peakline" style="--pc:#D97757">◔ Pico de uso: <b>martes 15–18 h</b> · más tranquilo los fines de semana</div>
+      <div class="heat" id="heat"></div>
+      <div class="hours" id="hours"></div>
+      <div class="legend">menos <span class="sw" id="legend"></span> más</div>
+      <div class="totals">
+        <div class="tot" style="--pc:#D97757"><div class="k">consumo 7 días</div><div class="v"><b>47%</b> del tope</div></div>
+        <div class="tot" style="--pc:#D97757"><div class="k">día más activo</div><div class="v">Martes</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap"><b>Vista historial</b> — heatmap por medidor <b>seleccionable</b>: elegís plataforma + ventana y ves ese. Nunca se mezclan series.</div>
+</div>
+
+<script>
+  // PRNG determinístico
+  function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+  // ---- sparklines: serie 0-100 con tendencia + un reset ----
+  function serie(seed, base, up, resetAt){
+    const r=mul(seed); const n=30; const out=[]; let v=base;
+    for(let i=0;i<n;i++){ v += up*(0.4+r()*1.2); if(resetAt&&i===resetAt) v=base*0.3; v=Math.max(2,Math.min(100,v)); out.push(v); }
+    return out;
+  }
+  function sparkPath(vals,w,h){
+    const max=100,min=0; const step=w/(vals.length-1);
+    const pts=vals.map((v,i)=>[i*step, h-((v-min)/(max-min))*h]);
+    const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const area=line+` L ${w} ${h} L 0 ${h} Z`;
+    return {line,area,end:pts[pts.length-1]};
+  }
+  function sparkSVG(vals,cls){
+    const w=54,h=16; const {line,area,end}=sparkPath(vals,w,h);
+    const col=cls==='crit'?'var(--crit)':cls==='warn'?'var(--warn)':'var(--ok)';
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <path d="${area}" fill="${col}" opacity="0.14"/>
+      <path d="${line}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="1.7" fill="${col}"/>
+    </svg>`;
+  }
+  const cls=p=>p>=85?'crit':p>=60?'warn':'ok';
+
+  const meters=[
+    {plat:'Claude', pc:'#D97757', chip:'Max 20x', rows:[
+      {l:'Sesión (5 h)', v:33, reset:'reinicia en 2 h 45 m', s:serie(1,10,1.0,14)},
+      {l:'Semana · todos los modelos', v:47, reset:'reinicia en 1 d 5 h', s:serie(2,20,1.0)},
+      {l:'Semana · Fable', v:55, reset:'reinicia en 1 d 5 h', s:serie(3,22,1.2)},
+      {l:'Uso extra (mes)', v:22, reset:'21,84 US$ · quedan 78,16 US$', s:serie(4,8,0.6)},
+    ]},
+    {plat:'ChatGPT', pc:'#10A37F', chip:'Plus', rows:[
+      {l:'Ventana de 5 h', v:11, reset:'reinicia en 4 h 00 m', s:serie(7,6,0.4,20)},
+    ]},
+  ];
+  const cardsEl=document.getElementById('cards');
+  cardsEl.innerHTML=meters.map(m=>`
+    <div class="card">
+      <div class="card-head"><span class="dot" style="--pc:${m.pc};box-shadow:0 0 0 3px color-mix(in srgb,${m.pc} 18%,transparent)"></span>
+        <span class="pname">${m.plat}</span><span class="chip">${m.chip}</span><span class="sp"></span>
+        <svg class="gear" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      ${m.rows.map(row=>`
+        <div class="meter">
+          <div class="m-row"><span class="m-label">${row.l}</span><span class="gap"></span>${sparkSVG(row.s,cls(row.v))}<span class="m-val">${row.v}%</span></div>
+          <div class="track"><div class="fill ${cls(row.v)}" style="width:${row.v}%"></div></div>
+          <div class="m-reset">${row.reset}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  // ---- heatmap 7 días × 12 bloques (2 h) ----
+  const days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const r=mul(99); const heat=document.getElementById('heat');
+  let html='';
+  for(let d=0;d<7;d++){
+    html+=`<span class="hlab">${days[d]}</span>`;
+    for(let b=0;b<12;b++){
+      const hour=b*2;
+      const work = (hour>=12&&hour<=20 && d<5) ? 1 : (hour>=8&&hour<22 && d<5)?0.55:0.2;
+      const wk = d>=5 ? 0.35:1;
+      let intensity = Math.max(0, Math.min(1, work*wk*(0.5+r())));
+      if(hour<6) intensity*=0.25;
+      const op=(0.10+intensity*0.9).toFixed(2);
+      const bg = intensity<0.06?'var(--track)':`color-mix(in srgb, #D97757 ${(intensity*100).toFixed(0)}%, var(--track))`;
+      html+=`<div class="cell" style="background:${bg}"></div>`;
+    }
+  }
+  heat.innerHTML=html;
+  document.getElementById('hours').innerHTML='<span></span>'+[0,'',4,'',8,'',12,'',16,'',20,''].map(h=>`<span>${h!==''?h:''}</span>`).join('');
+  document.getElementById('legend').innerHTML=[0.12,0.35,0.6,0.85].map(i=>`<i style="background:color-mix(in srgb,#D97757 ${(i*100)}%,var(--track))"></i>`).join('');
+</script>
+</body>
+</html>
