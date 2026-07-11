@@ -1,21 +1,27 @@
 // @ts-check
 import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
-import { getHiddenMeters } from './lib/prefs.js';
+import { getHiddenMeters, getBadgePlatform, getRefreshMinutes, refreshMinutesFor } from './lib/prefs.js';
 import { recordSnapshot } from './lib/history.js';
 import { maybeNotify } from './lib/notify.js';
 
-const ALARM = 'tokenyou-refresh';
-const REFRESH_MINUTES = 5;
+const ALARM_PREFIX = 'tyr:'; // un alarm por plataforma: `tyr:${platformId}`
 
-chrome.runtime.onInstalled.addListener(() => { void syncAlarm(); });
-chrome.runtime.onStartup.addListener(() => { void syncAlarm(); });
+chrome.runtime.onInstalled.addListener(() => { void syncAlarms(); });
+chrome.runtime.onStartup.addListener(() => { void syncAlarms(); });
 
-chrome.permissions.onAdded.addListener(() => { void syncAlarm(); void refreshAll(); });
-chrome.permissions.onRemoved.addListener(() => { void syncAlarm(); void pruneRevoked(); });
+chrome.permissions.onAdded.addListener(() => { void syncAlarms(); void refreshAll(); });
+chrome.permissions.onRemoved.addListener(() => { void syncAlarms(); void pruneRevoked(); });
+
+// Reaccionar a cambios de configuración desde la página de opciones.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes['prefs.refreshMinutes']) void syncAlarms();
+  if (changes['prefs.badgePlatform']) void updateBadge();
+});
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM) void refreshAll();
+  if (alarm.name.startsWith(ALARM_PREFIX)) void refreshPlatform(alarm.name.slice(ALARM_PREFIX.length));
 });
 
 // Click en una notificación → abrir la plataforma correspondiente.
@@ -44,20 +50,41 @@ async function enabledAdapters() {
   return adapters.filter((a) => origins.includes(a.origin));
 }
 
-/** El alarm solo existe si hay algo que refrescar: en reposo la extensión duerme. */
-async function syncAlarm() {
-  const enabled = await enabledAdapters();
-  if (enabled.length) {
-    chrome.alarms.create(ALARM, { periodInMinutes: REFRESH_MINUTES });
-  } else {
-    await chrome.alarms.clear(ALARM);
+/**
+ * Un alarm por plataforma activa, con su frecuencia (1/5/10 min). En reposo la
+ * extensión duerme; el service worker despierta solo cuando una alarm dispara.
+ */
+async function syncAlarms() {
+  const [enabled, refresh, existing] = await Promise.all([
+    enabledAdapters(),
+    getRefreshMinutes(),
+    chrome.alarms.getAll(),
+  ]);
+  // Limpiar alarms de plataformas que ya no están activas o cambiaron de período.
+  for (const a of existing) if (a.name.startsWith(ALARM_PREFIX)) await chrome.alarms.clear(a.name);
+
+  if (!enabled.length) {
     await chrome.action.setBadgeText({ text: '' });
+    return;
+  }
+  for (const adapter of enabled) {
+    const minutes = refreshMinutesFor(refresh, adapter.id);
+    chrome.alarms.create(ALARM_PREFIX + adapter.id, { periodInMinutes: minutes, delayInMinutes: 0.1 });
   }
 }
 
 async function refreshAll() {
   const enabled = await enabledAdapters();
   await Promise.all(enabled.map(refreshOne));
+  await updateBadge();
+}
+
+/** Refresca una sola plataforma (disparado por su alarm). @param {string} id */
+async function refreshPlatform(id) {
+  const enabled = await enabledAdapters();
+  const adapter = enabled.find((a) => a.id === id);
+  if (!adapter) return;
+  await refreshOne(adapter);
   await updateBadge();
 }
 
@@ -100,9 +127,19 @@ async function pruneRevoked() {
 async function updateBadge() {
   const enabled = await enabledAdapters();
   const keys = enabled.map((a) => `snap.${a.id}`);
-  const [stored, hidden] = await Promise.all([chrome.storage.local.get(keys), getHiddenMeters()]);
+  const [stored, hidden, badgePlatform] = await Promise.all([
+    chrome.storage.local.get(keys),
+    getHiddenMeters(),
+    getBadgePlatform(),
+  ]);
+  // El badge sigue el peor medidor de una plataforma fija, o de todas si no se fijó.
   /** @type {import('./lib/quota.js').Snapshot[]} */
-  const snaps = Object.values(stored);
+  const snaps =
+    badgePlatform && stored[`snap.${badgePlatform}`]
+      ? [stored[`snap.${badgePlatform}`]]
+      : badgePlatform
+        ? []
+        : Object.values(stored);
   const worst = worstPct(snaps, hidden);
 
   if (worst === null) {

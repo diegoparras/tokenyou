@@ -6,8 +6,19 @@ import {
   customToAdapter,
 } from '../adapters/custom.js';
 import { getNotifyPrefs, setNotifyPrefs } from '../lib/notify.js';
+import {
+  getBadgePlatform, setBadgePlatform,
+  getRefreshMinutes, refreshMinutesFor, setRefreshForPlatform, REFRESH_CHOICES,
+} from '../lib/prefs.js';
+import { getAllAdapters } from '../adapters/index.js';
 
-const t = (/** @type {string} */ key) => chrome.i18n.getMessage(key) || key;
+const PLATFORM_COLORS = {
+  claude: '#D97757', chatgpt: '#10A37F', gemini: '#4E8CF9', grok: '#8A93A6',
+  perplexity: '#26B8CE', copilot: '#6E40C9', abacus: '#EF6C3A',
+};
+
+const t = (/** @type {string} */ key, /** @type {string|undefined} */ arg = undefined) =>
+  chrome.i18n.getMessage(key, arg ? [arg] : undefined) || key;
 
 const $editor = /** @type {HTMLTextAreaElement} */ (document.getElementById('editor'));
 const $result = /** @type {HTMLPreElement} */ (document.getElementById('result'));
@@ -41,6 +52,7 @@ async function init() {
   setText('save-btn', t('optSave'));
 
   await initNotifications();
+  await initIconAndRefresh();
 
   const services = await getCustomServices();
   $editor.value = JSON.stringify(services, null, 2);
@@ -182,6 +194,63 @@ async function initNotifications() {
   const save = () => setNotifyPrefs({ reset: $reset.checked, threshold: $th.checked ? 85 : null });
   $reset.addEventListener('change', save);
   $th.addEventListener('change', save);
+}
+
+/** Ícono (qué plataforma muestra el badge) + frecuencia de actualización por plataforma. */
+async function initIconAndRefresh() {
+  setText('prefs-title', t('prefsTitle'));
+  setText('badge-lbl', t('badgeLabel'));
+  setText('refresh-intro', t('refreshIntro'));
+
+  const [granted, adapters, badge, refresh] = await Promise.all([
+    chrome.permissions.getAll(),
+    getAllAdapters(),
+    getBadgePlatform(),
+    getRefreshMinutes(),
+  ]);
+  const origins = granted.origins ?? [];
+  const enabled = adapters.filter((a) => origins.includes(a.origin));
+
+  // Selector del badge: "peor de todas" + cada plataforma activa.
+  const $badge = /** @type {HTMLSelectElement} */ (document.getElementById('badge-select'));
+  const optAll = document.createElement('option');
+  optAll.value = '';
+  optAll.textContent = t('badgeWorstAll');
+  const opts = enabled.map((a) => {
+    const o = document.createElement('option');
+    o.value = a.id;
+    o.textContent = a.name;
+    return o;
+  });
+  $badge.replaceChildren(optAll, ...opts);
+  $badge.value = badge ?? '';
+  $badge.addEventListener('change', () => void setBadgePlatform($badge.value || null));
+
+  // Frecuencia por plataforma.
+  const $list = /** @type {HTMLElement} */ (document.getElementById('refresh-list'));
+  $list.replaceChildren(
+    ...enabled.map((a) => {
+      const row = document.createElement('div');
+      row.className = 'refresh-row';
+      const left = document.createElement('span');
+      left.className = 'rp';
+      const dot = document.createElement('i');
+      dot.style.setProperty('--pc', PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (a.id)] ?? '#7B8A96');
+      left.append(dot, document.createTextNode(a.name));
+      const sel = document.createElement('select');
+      sel.className = 'mini-sel';
+      for (const m of REFRESH_CHOICES) {
+        const o = document.createElement('option');
+        o.value = String(m);
+        o.textContent = t('minutes', String(m));
+        sel.append(o);
+      }
+      sel.value = String(refreshMinutesFor(refresh, a.id));
+      sel.addEventListener('change', () => void setRefreshForPlatform(a.id, Number(sel.value)));
+      row.append(left, sel);
+      return row;
+    })
+  );
 }
 
 /** @param {string} id @param {string} text */

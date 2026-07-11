@@ -59,6 +59,10 @@ h1 { font-size: 20px; margin: 0; }
 .notif-opts.off { opacity: 0.45; pointer-events: none; }
 .row.sub { font-size: 13.5px; color: var(--ink-2); padding: 6px 0; }
 .section-h { font-size: 16px; margin: 0 0 6px; letter-spacing: -0.01em; }
+.mini-sel { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-family: var(--sans); font-size: 13px; padding: 6px 10px; cursor: pointer; }
+.refresh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 13.5px; }
+.refresh-row .rp { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.refresh-row .rp i { width: 8px; height: 8px; border-radius: 50%; background: var(--pc, var(--accent)); }
 
 .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
 .toolbar .spacer { flex: 1; }
