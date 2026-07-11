@@ -208,12 +208,11 @@ main { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px; }
 .meter:last-child { margin-bottom: 0; }
 .m-row {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   margin-bottom: 5px;
 }
-.m-label-wrap { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.m-label-wrap { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 1; }
 .m-label {
   font-size: 12px;
   color: var(--ink-2);
@@ -231,6 +230,16 @@ main { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px; }
   color: var(--ink);
   flex: none;
 }
+.spark { flex: none; display: inline-flex; opacity: 0.9; }
+.spark svg { display: block; }
+.sp-line { stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.sp-area { stroke: none; opacity: 0.14; }
+.sp-ok .sp-line, .sp-ok .sp-dot { stroke: var(--ok); fill: var(--ok); }
+.sp-ok .sp-area { fill: var(--ok); }
+.sp-warn .sp-line, .sp-warn .sp-dot { stroke: var(--warn); fill: var(--warn); }
+.sp-warn .sp-area { fill: var(--warn); }
+.sp-crit .sp-line, .sp-crit .sp-dot { stroke: var(--crit); fill: var(--crit); }
+.sp-crit .sp-area { fill: var(--crit); }
 .track {
   position: relative;
   height: 7px;

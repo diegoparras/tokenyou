@@ -2,6 +2,7 @@
 import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
 import { getHiddenMeters } from './lib/prefs.js';
+import { recordSnapshot } from './lib/history.js';
 
 const ALARM = 'tokenyou-refresh';
 const REFRESH_MINUTES = 5;
@@ -67,6 +68,7 @@ async function refreshOne(adapter) {
     };
   }
   await chrome.storage.local.set({ [`snap.${adapter.id}`]: snap });
+  await recordSnapshot(snap);
 }
 
 /** Borra snapshots de plataformas cuyo permiso se revocó. */

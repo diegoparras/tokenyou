@@ -82,6 +82,28 @@
     'prefs.hiddenMeters': [],
   };
 
+  // Series sintéticas de historial para ver los sparklines en el preview.
+  const mkSeries = (base, up, resetAt) => {
+    let v = base; const out = [];
+    for (let i = 0; i < 30; i++) {
+      v += up * (0.5 + ((i * 7) % 5) / 4);
+      if (resetAt && i === resetAt) v = base * 0.3;
+      v = Math.max(2, Math.min(100, v));
+      out.push({ t: now - (30 - i) * 30 * 60000, v: Math.round(v) });
+    }
+    return out;
+  };
+  store['hist.pts.claude/session'] = mkSeries(8, 1.1, 16);
+  store['hist.pts.claude/weekly_all'] = mkSeries(20, 1.0);
+  store['hist.pts.claude/weekly_scoped'] = mkSeries(24, 1.2);
+  store['hist.pts.claude/extra_usage'] = mkSeries(10, 0.5);
+  store['hist.pts.chatgpt/primary'] = mkSeries(5, 0.4, 22);
+  store['hist.pts.chatgpt/secondary'] = mkSeries(1, 0.1);
+  store['hist.pts.gemini/session'] = mkSeries(1, 0.05);
+  store['hist.pts.gemini/weekly'] = mkSeries(1, 0.1);
+  store['hist.pts.grok/default'] = mkSeries(40, 2.0);
+  store['hist.pts.custom-cursor/premium'] = mkSeries(20, 1.5);
+
   const changeListeners = [];
   const grantedOrigins = [
     'https://claude.ai/*',

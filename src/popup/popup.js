@@ -2,6 +2,7 @@
 import { getAllAdapters } from '../adapters/index.js';
 import { worstPct } from '../lib/quota.js';
 import { getHiddenMeters, toggleHiddenMeter } from '../lib/prefs.js';
+import { getSeries } from '../lib/history.js';
 
 /** Color de identidad por plataforma (punto de la card). */
 const PLATFORM_COLORS = {
@@ -76,8 +77,19 @@ async function render() {
   const keys = enabled.map((a) => `snap.${a.id}`);
   const stored = await chrome.storage.local.get(keys);
 
+  // Series de historial de todos los medidores con % visibles (para los sparklines).
+  const seriesIds = [];
+  for (const a of enabled) {
+    const snap = stored[`snap.${a.id}`];
+    if (!snap?.ok) continue;
+    for (const m of snap.meters) {
+      if (typeof m.usedPct === 'number') seriesIds.push(`${snap.platformId}/${m.id}`);
+    }
+  }
+  const series = await getSeries(seriesIds);
+
   const cards = enabled.map((a, i) => {
-    const node = card(a, stored[`snap.${a.id}`], hidden);
+    const node = card(a, stored[`snap.${a.id}`], hidden, series);
     if (firstPaint) {
       node.classList.add('enter');
       node.style.setProperty('--i', String(i));
@@ -121,8 +133,9 @@ function renderOverall(worst) {
  * @param {import('../adapters/index.js').Adapter} adapter
  * @param {import('../lib/quota.js').Snapshot|undefined} snap
  * @param {Set<string>} hidden
+ * @param {Record<string, {t:number,v:number}[]>} series
  */
-function card(adapter, snap, hidden) {
+function card(adapter, snap, hidden, series) {
   const art = el('article', 'card');
   const isEditing = editing.has(adapter.id);
   const color = PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (adapter.id)] ?? '#7B8A96';
@@ -171,7 +184,7 @@ function card(adapter, snap, hidden) {
     const key = `${snap.platformId}/${m.id}`;
     const isHidden = hidden.has(key);
     if (isHidden && !isEditing) continue;
-    art.append(meterEl(m, { key, isHidden, isEditing }));
+    art.append(meterEl(m, { key, isHidden, isEditing }, series[key]));
   }
   return art;
 }
@@ -179,8 +192,9 @@ function card(adapter, snap, hidden) {
 /**
  * @param {import('../lib/quota.js').Meter} m
  * @param {{key: string, isHidden: boolean, isEditing: boolean}} opts
+ * @param {{t:number,v:number}[]} [points]
  */
-function meterEl(m, opts) {
+function meterEl(m, opts, points) {
   const box = el('div', 'meter' + (opts.isHidden ? ' meter-hidden' : ''));
 
   const row = el('div', 'm-row');
@@ -196,6 +210,12 @@ function meterEl(m, opts) {
   }
   labelWrap.append(el('span', 'm-label', m.label));
   row.append(labelWrap);
+
+  // Sparkline de tendencia (últimas 24 h) para medidores con %, si hay historia.
+  if (m.usedPct !== null && m.usedPct !== undefined && points && points.length >= 3) {
+    const cls = m.usedPct >= 85 ? 'crit' : m.usedPct >= 60 ? 'warn' : 'ok';
+    row.append(sparkEl(points.map((p) => p.v), cls));
+  }
 
   const val =
     m.usedPct !== null && m.usedPct !== undefined
@@ -288,6 +308,27 @@ const ICONS = {
   'eye-off':
     'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
 };
+
+/**
+ * Mini gráfico de tendencia (area + línea) de una serie 0-100.
+ * @param {number[]} vals
+ * @param {'ok'|'warn'|'crit'} cls
+ */
+function sparkEl(vals, cls) {
+  const w = 52, h = 15;
+  const step = w / (vals.length - 1);
+  const pts = vals.map((v, i) => [i * step, h - (Math.max(0, Math.min(100, v)) / 100) * (h - 2) - 1]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = `${line} L ${w} ${h} L 0 ${h} Z`;
+  const end = pts[pts.length - 1];
+  const span = el('span', `spark sp-${cls}`);
+  span.innerHTML =
+    `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">` +
+    `<path class="sp-area" d="${area}"/>` +
+    `<path class="sp-line" d="${line}" fill="none"/>` +
+    `<circle class="sp-dot" cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="1.6"/></svg>`;
+  return span;
+}
 
 /** @param {keyof typeof ICONS} name @param {string} title */
 function iconBtn(name, title) {
