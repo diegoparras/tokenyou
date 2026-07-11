@@ -20,7 +20,7 @@
         { id: 'session', label: 'Sesión (5 h)', usedPct: 33, resetsAt: now + 2 * H + 5 * 60000 },
         { id: 'weekly_all', label: 'Semana · todos los modelos', usedPct: 32, resetsAt: now + 3 * 24 * H },
         { id: 'weekly_scoped', label: 'Semana · Fable', usedPct: 64, resetsAt: now + 3 * 24 * H },
-        { id: 'extra_usage', label: 'Uso extra (mes)', usedPct: 22, resetsAt: null, detail: 'US$ 21,84 / US$ 100,00' },
+        { id: 'extra_usage', label: 'Uso extra (mes)', usedPct: 22, resetsAt: null, detail: 'US$ 21,84 · quedan US$ 78,16' },
       ],
       fetchedAt: now - 40 * 1000,
     },

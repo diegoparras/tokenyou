@@ -96,7 +96,8 @@ function moneyDetail(extra) {
   const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency });
   const used = Number(extra.used_credits) / 10 ** dp;
   const limit = Number(extra.monthly_limit) / 10 ** dp;
-  return `${fmt.format(used)} / ${fmt.format(limit)}`;
+  const left = Math.max(0, limit - used);
+  return `${fmt.format(used)} · ${t('moneyLeft', fmt.format(left))}`;
 }
 
 /** "default_claude_max_20x" → "Max 20x" @param {string=} tier */
