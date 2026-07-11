@@ -1,7 +1,7 @@
 // @ts-check
 import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
-import { getHiddenMeters, getBadgePlatform, getRefreshMinutes, refreshMinutesFor } from './lib/prefs.js';
+import { getHiddenMeters, getPins, getRefreshMinutes, refreshMinutesFor } from './lib/prefs.js';
 import { recordSnapshot } from './lib/history.js';
 import { maybeNotify } from './lib/notify.js';
 
@@ -17,7 +17,7 @@ chrome.permissions.onRemoved.addListener(() => { void syncAlarms(); void pruneRe
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes['prefs.refreshMinutes']) void syncAlarms();
-  if (changes['prefs.badgePlatform']) void updateBadge();
+  if (changes['prefs.pins'] || changes['prefs.hiddenMeters']) void updateBadge();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -127,20 +127,21 @@ async function pruneRevoked() {
 async function updateBadge() {
   const enabled = await enabledAdapters();
   const keys = enabled.map((a) => `snap.${a.id}`);
-  const [stored, hidden, badgePlatform] = await Promise.all([
+  const [stored, hidden, pins] = await Promise.all([
     chrome.storage.local.get(keys),
     getHiddenMeters(),
-    getBadgePlatform(),
+    getPins(),
   ]);
-  // El badge sigue el peor medidor de una plataforma fija, o de todas si no se fijó.
-  /** @type {import('./lib/quota.js').Snapshot[]} */
-  const snaps =
-    badgePlatform && stored[`snap.${badgePlatform}`]
-      ? [stored[`snap.${badgePlatform}`]]
-      : badgePlatform
-        ? []
-        : Object.values(stored);
-  const worst = worstPct(snaps, hidden);
+  // El badge sigue el medidor fijado #1; si no hay pins, el peor de todos.
+  let worst = null;
+  if (pins.length) {
+    const [pid, mid] = pins[0].split('/');
+    const snap = stored[`snap.${pid}`];
+    const m = snap?.ok ? snap.meters.find((/** @type {any} */ x) => x.id === mid) : null;
+    if (m && typeof m.usedPct === 'number') worst = Math.round(m.usedPct);
+  } else {
+    worst = worstPct(Object.values(stored), hidden);
+  }
 
   if (worst === null) {
     await chrome.action.setBadgeText({ text: '' });

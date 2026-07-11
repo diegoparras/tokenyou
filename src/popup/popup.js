@@ -1,37 +1,38 @@
 // @ts-check
 import { getAllAdapters } from '../adapters/index.js';
 import { worstPct } from '../lib/quota.js';
-import { getHiddenMeters, toggleHiddenMeter } from '../lib/prefs.js';
+import {
+  getHiddenMeters, toggleHiddenMeter,
+  getPins, togglePin, getCollapsed, toggleCollapsed, getOrder, setOrder, MAX_PINS,
+} from '../lib/prefs.js';
 import { getSeries } from '../lib/history.js';
-
-/** Color de identidad por plataforma (punto de la card). */
-const PLATFORM_COLORS = {
-  claude: '#D97757',
-  chatgpt: '#10A37F',
-  gemini: '#4E8CF9',
-  grok: '#8A93A6',
-  perplexity: '#26B8CE',
-  copilot: '#6E40C9',
-  abacus: '#EF6C3A',
-};
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
   chrome.i18n.getMessage(key, args) || key;
+
+/** Color de identidad por plataforma (el punto que la identifica). */
+const PLATFORM_COLORS = {
+  claude: '#D97757', chatgpt: '#10A37F', gemini: '#4E8CF9', grok: '#8A93A6',
+  perplexity: '#26B8CE', copilot: '#6E40C9', abacus: '#EF6C3A',
+};
+const pcolor = (/** @type {string} */ id) =>
+  PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (id)] ?? '#7B8A96';
+/** @param {number} pct */
+const stateOf = (pct) => (pct >= 85 ? 'crit' : pct >= 60 ? 'warn' : 'ok');
 
 const $cards = /** @type {HTMLElement} */ (document.getElementById('cards'));
 const $empty = /** @type {HTMLElement} */ (document.getElementById('empty'));
 const $add = /** @type {HTMLElement} */ (document.getElementById('add'));
 const $addList = /** @type {HTMLElement} */ (document.getElementById('add-list'));
-const $updated = /** @type {HTMLElement} */ (document.getElementById('updated'));
+const $ringGroup = /** @type {HTMLElement} */ (document.getElementById('ring-group'));
 const $refresh = /** @type {HTMLButtonElement} */ (document.getElementById('refresh'));
 const $history = /** @type {HTMLButtonElement} */ (document.getElementById('history'));
 const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('custom-link'));
 
-/** Plataformas con el panel "mostrar/ocultar medidores" abierto. @type {Set<string>} */
+/** Plataformas con el menú "mostrar/ocultar medidores" abierto. @type {Set<string>} */
 const editing = new Set();
-
-/** true solo en el primer pintado (al abrir el popup): habilita animaciones de entrada. */
 let firstPaint = true;
+let dragId = /** @type {string|null} */ (null);
 
 init();
 
@@ -42,22 +43,17 @@ async function init() {
   setText('add-hint', t('addPlatformHint'));
   setText('footer-note', t('footerNote'));
   $refresh.title = t('refresh');
-  $customLink.textContent = t('customLink');
-  $customLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    void chrome.runtime.openOptionsPage();
-  });
-
-  $refresh.addEventListener('click', () => void requestRefresh());
   $history.title = t('historyOpen');
+  $customLink.textContent = t('customLink');
+  $customLink.addEventListener('click', (e) => { e.preventDefault(); void chrome.runtime.openOptionsPage(); });
   $history.addEventListener('click', () => {
     const url = chrome.runtime.getURL('src/history/history.html');
     if (chrome.tabs?.create) chrome.tabs.create({ url });
     else window.open(url, '_blank');
   });
-  chrome.storage.onChanged.addListener((_changes, area) => {
-    if (area === 'local') void render();
-  });
+  $refresh.addEventListener('click', () => void requestRefresh());
+
+  chrome.storage.onChanged.addListener((_c, area) => { if (area === 'local') void render(); });
   setInterval(() => void render(), 30_000);
 
   await render();
@@ -66,43 +62,36 @@ async function init() {
 
 async function requestRefresh() {
   $refresh.classList.add('spinning');
-  try {
-    await chrome.runtime.sendMessage({ type: 'refresh' });
-  } finally {
-    $refresh.classList.remove('spinning');
-  }
+  try { await chrome.runtime.sendMessage({ type: 'refresh' }); }
+  finally { $refresh.classList.remove('spinning'); }
 }
 
 async function render() {
-  const [granted, adapters, hidden] = await Promise.all([
-    chrome.permissions.getAll(),
-    getAllAdapters(),
-    getHiddenMeters(),
+  const [granted, adapters, hidden, pins, collapsed, order] = await Promise.all([
+    chrome.permissions.getAll(), getAllAdapters(),
+    getHiddenMeters(), getPins(), getCollapsed(), getOrder(),
   ]);
   const origins = granted.origins ?? [];
   const enabled = adapters.filter((a) => origins.includes(a.origin));
   const disabled = adapters.filter((a) => !origins.includes(a.origin));
 
-  const keys = enabled.map((a) => `snap.${a.id}`);
-  const stored = await chrome.storage.local.get(keys);
+  const stored = await chrome.storage.local.get(enabled.map((a) => `snap.${a.id}`));
 
-  // Series de historial de todos los medidores con % visibles (para los sparklines).
+  // Series de historial (sparklines) de los medidores con % visibles.
   const seriesIds = [];
   for (const a of enabled) {
-    const snap = stored[`snap.${a.id}`];
-    if (!snap?.ok) continue;
-    for (const m of snap.meters) {
-      if (typeof m.usedPct === 'number') seriesIds.push(`${snap.platformId}/${m.id}`);
-    }
+    const s = stored[`snap.${a.id}`];
+    if (s?.ok) for (const m of s.meters) if (typeof m.usedPct === 'number') seriesIds.push(`${a.id}/${m.id}`);
   }
   const series = await getSeries(seriesIds);
 
-  const cards = enabled.map((a, i) => {
-    const node = card(a, stored[`snap.${a.id}`], hidden, series);
-    if (firstPaint) {
-      node.classList.add('enter');
-      node.style.setProperty('--i', String(i));
-    }
+  // Orden: pins primero (por su orden), luego el orden manual, luego el natural.
+  const pinnedPids = [...new Set(pins.map((k) => k.split('/')[0]))];
+  const sorted = [...enabled].sort((a, b) => rank(a, pinnedPids, order) - rank(b, pinnedPids, order));
+
+  const cards = sorted.map((a, i) => {
+    const node = card(a, stored[`snap.${a.id}`], { hidden, pins, collapsed, series });
+    if (firstPaint) { node.classList.add('enter'); node.style.setProperty('--i', String(i)); }
     return node;
   });
   $cards.replaceChildren(...cards);
@@ -111,157 +100,218 @@ async function render() {
   $add.hidden = disabled.length === 0;
   $addList.replaceChildren(...disabled.map(addRow));
 
-  const newest = Object.values(stored)
-    .map((s) => s?.fetchedAt ?? 0)
-    .reduce((a, b) => Math.max(a, b), 0);
-  $updated.textContent = newest ? agoLabel(newest) : '';
-
-  renderOverall(worstPct(Object.values(stored), hidden));
+  renderRings(enabled, stored, pins, hidden);
   firstPaint = false;
 }
 
-/** Anillo de estado global en el header: el peor medidor visible. @param {number|null} worst */
-function renderOverall(worst) {
-  const svg = /** @type {SVGElement} */ (/** @type {unknown} */ (document.getElementById('overall')));
-  const arc = /** @type {SVGCircleElement} */ (/** @type {unknown} */ (document.getElementById('overall-arc')));
-  const text = /** @type {SVGTextElement} */ (/** @type {unknown} */ (document.getElementById('overall-text')));
-  if (!svg || !arc || !text) return;
-  if (worst === null) {
-    svg.setAttribute('hidden', '');
-    return;
-  }
-  svg.removeAttribute('hidden');
-  const C = 2 * Math.PI * 15;
-  arc.style.strokeDasharray = `${(Math.min(100, worst) / 100) * C} ${C}`;
-  const cls = worst >= 85 ? 'crit' : worst >= 60 ? 'warn' : 'ok';
-  svg.setAttribute('data-level', cls);
-  text.textContent = `${worst}`;
+/**
+ * @param {import('../adapters/index.js').Adapter} a
+ * @param {string[]} pinnedPids
+ * @param {string[]} order
+ */
+function rank(a, pinnedPids, order) {
+  if (pinnedPids.includes(a.id)) return -100 + pinnedPids.indexOf(a.id);
+  const oi = order.indexOf(a.id);
+  return oi >= 0 ? oi : 50;
 }
 
+/* ============ HEADER: anillos + etiquetas ============ */
+/**
+ * @param {import('../adapters/index.js').Adapter[]} enabled
+ * @param {Record<string, any>} stored
+ * @param {string[]} pins
+ * @param {Set<string>} hidden
+ */
+function renderRings(enabled, stored, pins, hidden) {
+  // Datos de cada anillo: los pins (medidor exacto) o el peor global si no hay pins.
+  const data = [];
+  if (pins.length) {
+    for (const key of pins.slice(0, MAX_PINS)) {
+      const [pid, mid] = key.split('/');
+      const snap = stored[`snap.${pid}`];
+      const m = snap?.ok ? snap.meters.find((/** @type {any} */ x) => x.id === mid) : null;
+      const adapter = enabled.find((a) => a.id === pid);
+      if (m && typeof m.usedPct === 'number' && adapter) {
+        data.push({ pct: m.usedPct, color: pcolor(pid), name: adapter.name });
+      }
+    }
+  } else {
+    const worst = worstPct(Object.values(stored), hidden);
+    if (worst !== null) data.push({ pct: worst, color: null, name: t('worstLabel') });
+  }
+  if (!data.length) { $ringGroup.replaceChildren(); return; }
+
+  const R = [20, 14, 8];
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 48 48');
+  svg.setAttribute('class', 'rings-svg');
+  data.slice(0, 3).forEach((d, i) => {
+    const r = R[i], circ = 2 * Math.PI * r, len = (Math.min(100, d.pct) / 100) * circ;
+    const track = document.createElementNS(NS, 'circle');
+    track.setAttribute('cx', '24'); track.setAttribute('cy', '24'); track.setAttribute('r', String(r));
+    track.setAttribute('class', 'ring-track');
+    const arc = document.createElementNS(NS, 'circle');
+    arc.setAttribute('cx', '24'); arc.setAttribute('cy', '24'); arc.setAttribute('r', String(r));
+    arc.setAttribute('class', `ring-arc ${stateOf(d.pct)}`);
+    arc.setAttribute('transform', 'rotate(-90 24 24)');
+    arc.setAttribute('stroke-dasharray', `${len.toFixed(1)} ${circ.toFixed(1)}`);
+    svg.append(track, arc);
+  });
+  const rings = el('span', 'rings');
+  rings.append(svg);
+
+  const labels = el('div', 'ring-labels');
+  for (const d of data) {
+    const row = el('span', 'rl' + (d.color ? '' : ' global'));
+    const dot = el('i', '');
+    if (d.color) dot.style.background = d.color;
+    const name = el('span', 'rn', d.name);
+    const val = el('b', 'st-' + stateOf(d.pct), `${d.pct}%`);
+    row.append(dot, name, val);
+    labels.append(row);
+  }
+  $ringGroup.replaceChildren(rings, labels);
+}
+
+/* ============ CARDS ============ */
 /**
  * @param {import('../adapters/index.js').Adapter} adapter
  * @param {import('../lib/quota.js').Snapshot|undefined} snap
- * @param {Set<string>} hidden
- * @param {Record<string, {t:number,v:number}[]>} series
+ * @param {{hidden:Set<string>, pins:string[], collapsed:Set<string>, series:Record<string,{t:number,v:number}[]>}} ctx
  */
-function card(adapter, snap, hidden, series) {
+function card(adapter, snap, ctx) {
   const art = el('article', 'card');
-  const isEditing = editing.has(adapter.id);
-  const color = PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (adapter.id)] ?? '#7B8A96';
-  art.style.setProperty('--pcolor', color);
+  art.dataset.pid = adapter.id;
+  art.draggable = true;
+  wireDrag(art, adapter.id);
 
-  const head = el('div', 'card-head');
+  const meters = snap?.ok ? snap.meters : [];
+  const worst = meters.reduce((mx, m) => (typeof m.usedPct === 'number' ? Math.max(mx, m.usedPct) : mx), 0);
+  const st = snap?.ok && meters.length ? stateOf(worst) : null;
+  if (st) art.classList.add('state-' + st);
+  const isPinned = ctx.pins.some((k) => k.startsWith(adapter.id + '/'));
+  if (isPinned) art.classList.add('pinned');
+  const isCollapsed = ctx.collapsed.has(adapter.id) && !!snap?.ok;
+  if (!isCollapsed) art.classList.add('open');
+  art.style.setProperty('--pc', pcolor(adapter.id));
+
+  // ---- header de la card ----
+  const head = el('div', 'chead');
+  const menu = iconBtn('menu', t('cardMenu'));
+  menu.classList.add('menu-btn');
+  if (editing.has(adapter.id)) menu.classList.add('active');
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (editing.has(adapter.id)) editing.delete(adapter.id); else editing.add(adapter.id);
+    void render();
+  });
+  head.append(menu);
   head.append(el('span', 'pdot'));
-  const nameCol = el('div', 'pname-col');
-  nameCol.append(el('span', 'pname', adapter.name));
-  if (snap?.account) {
-    const acc = el('span', 'paccount', snap.account);
-    acc.title = snap.account;
-    nameCol.append(acc);
-  }
-  head.append(nameCol);
+  head.append(el('span', 'pname', adapter.name));
   if (snap?.plan) head.append(el('span', 'chip', snap.plan));
-  if (snap?.approx) head.append(el('span', 'chip', t('approxChip')));
+  if (snap?.account && !isCollapsed) head.append(el('span', 'paccount', snap.account));
   head.append(el('span', 'spacer'));
 
-  if (snap?.ok && snap.meters.length) {
-    const gear = iconBtn('gear', t('editMeters'));
-    if (isEditing) gear.classList.add('active');
-    gear.addEventListener('click', () => {
-      if (isEditing) editing.delete(adapter.id);
-      else editing.add(adapter.id);
-      void render();
-    });
-    head.append(gear);
+  if (isCollapsed) {
+    const track = el('div', 'mini-track');
+    const fill = el('div', 'mini-fill st-' + stateOf(worst));
+    fill.style.width = `${Math.min(100, worst)}%`;
+    track.append(fill);
+    head.append(track);
+    head.append(el('span', 'mini-val st-' + stateOf(worst), `${Math.round(worst)}%`));
   }
-  const remove = /** @type {HTMLButtonElement} */ (el('button', 'remove-btn', t('remove')));
-  remove.addEventListener('click', () => void removePlatform(adapter));
-  head.append(remove);
+  // chevron (colapsar) solo si hay datos
+  if (snap?.ok && meters.length) {
+    const chev = iconBtn('chevron', t('collapseCard'));
+    chev.classList.add('chev');
+    chev.addEventListener('click', async (e) => { e.stopPropagation(); await toggleCollapsed(adapter.id); });
+    head.append(chev);
+  }
+  head.addEventListener('click', (e) => {
+    if (e.target instanceof Element && (e.target.closest('.menu-btn') || e.target.closest('.chev'))) return;
+    if (snap?.ok && meters.length) void toggleCollapsed(adapter.id);
+  });
   art.append(head);
 
-  if (!snap) {
-    art.append(el('p', 'notice', '…'));
-    return art;
-  }
-  if (!snap.ok) {
-    const msg = snap.error === 'auth' ? t('loggedOut', [adapter.name]) : t('fetchError');
-    art.append(el('p', 'notice', msg));
-    return art;
-  }
+  if (isCollapsed) return art;
 
-  for (const m of snap.meters) {
-    const key = `${snap.platformId}/${m.id}`;
-    const isHidden = hidden.has(key);
-    if (isHidden && !isEditing) continue;
-    art.append(meterEl(m, { key, isHidden, isEditing }, series[key]));
+  // ---- cuerpo ----
+  if (!snap) { art.append(el('p', 'notice', '…')); return art; }
+  if (!snap.ok) {
+    art.append(el('p', 'notice', snap.error === 'auth' ? t('loggedOut', [adapter.name]) : t('fetchError')));
+    return art;
   }
+  const body = el('div', 'cbody');
+  const isEditing = editing.has(adapter.id);
+  for (const m of snap.meters) {
+    const key = `${adapter.id}/${m.id}`;
+    const isHidden = ctx.hidden.has(key);
+    if (isHidden && !isEditing) continue;
+    body.append(meterEl(adapter.id, m, { key, isHidden, isEditing, pinned: ctx.pins.includes(key) }, ctx.series[key]));
+  }
+  art.append(body);
   return art;
 }
 
 /**
+ * @param {string} pid
  * @param {import('../lib/quota.js').Meter} m
- * @param {{key: string, isHidden: boolean, isEditing: boolean}} opts
+ * @param {{key:string, isHidden:boolean, isEditing:boolean, pinned:boolean}} opts
  * @param {{t:number,v:number}[]} [points]
  */
-function meterEl(m, opts, points) {
+function meterEl(pid, m, opts, points) {
   const box = el('div', 'meter' + (opts.isHidden ? ' meter-hidden' : ''));
-
   const row = el('div', 'm-row');
-  const labelWrap = el('span', 'm-label-wrap');
+
+  // En modo edición: ojito para ocultar. Si no: alfiler para fijar (solo medidores con %).
   if (opts.isEditing) {
     const eye = iconBtn(opts.isHidden ? 'eye-off' : 'eye', t('toggleMeter'));
-    eye.classList.add('eye-btn');
-    eye.addEventListener('click', async () => {
-      await toggleHiddenMeter(opts.key);
-      await chrome.runtime.sendMessage({ type: 'refresh' });
-    });
-    labelWrap.append(eye);
-  }
-  labelWrap.append(el('span', 'm-label', m.label));
-  row.append(labelWrap);
-
-  // Sparkline de tendencia (últimas 24 h) para medidores con %, si hay historia.
-  if (m.usedPct !== null && m.usedPct !== undefined && points && points.length >= 3) {
-    const cls = m.usedPct >= 85 ? 'crit' : m.usedPct >= 60 ? 'warn' : 'ok';
-    row.append(sparkEl(points.map((p) => p.v), cls));
+    eye.classList.add('lead-btn');
+    eye.addEventListener('click', async () => { await toggleHiddenMeter(opts.key); await chrome.runtime.sendMessage({ type: 'refresh' }); });
+    row.append(eye);
+  } else if (typeof m.usedPct === 'number') {
+    const pin = iconBtn('pin', t('pinMeter'));
+    pin.classList.add('lead-btn', 'pin');
+    if (opts.pinned) pin.classList.add('on');
+    pin.style.setProperty('--pc', pcolor(pid));
+    pin.addEventListener('click', async (e) => { e.stopPropagation(); await togglePin(opts.key); });
+    row.append(pin);
+  } else {
+    row.append(el('span', 'lead-gap'));
   }
 
+  row.append(el('span', 'm-label', m.label));
+
+  if (typeof m.usedPct === 'number' && points && points.length >= 3) {
+    row.append(sparkEl(points.map((p) => p.v), stateOf(m.usedPct)));
+  }
   const val =
-    m.usedPct !== null && m.usedPct !== undefined
-      ? `${m.usedPct}%`
-      : m.total != null && m.remaining != null
-        ? t('remainingOf', [String(m.remaining), String(m.total)])
-        : m.used != null
-          ? t('sentCount', [String(m.used)])
+    m.usedPct !== null && m.usedPct !== undefined ? `${m.usedPct}%`
+      : m.total != null && m.remaining != null ? t('remainingOf', [String(m.remaining), String(m.total)])
+        : m.used != null ? t('sentCount', [String(m.used)])
           : t('remainingOnly', [String(m.remaining ?? '—')]);
   row.append(el('span', 'm-val', val));
   box.append(row);
 
-  if (m.usedPct !== null && m.usedPct !== undefined) {
+  if (typeof m.usedPct === 'number') {
     const track = el('div', 'track');
-    const fill = el('div', 'fill ' + (m.usedPct >= 85 ? 'crit' : m.usedPct >= 60 ? 'warn' : 'ok'));
+    const fill = el('div', 'fill st-' + stateOf(m.usedPct));
     const target = `${Math.min(100, m.usedPct)}%`;
-    if (firstPaint) {
-      // Crece desde 0 al abrir el popup; en refrescos posteriores la transición
-      // de width anima el cambio de valor por sí sola.
-      fill.style.width = '0%';
-      requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = target; }));
-    } else {
-      fill.style.width = target;
-    }
+    if (firstPaint) { fill.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = target; })); }
+    else fill.style.width = target;
     track.append(fill);
     box.append(track);
   }
 
   const notes = [];
   if (m.detail) notes.push(m.detail);
-  if (m.resetsAt && m.resetsAt > Date.now()) {
-    notes.push(t('resetsIn', [durationLabel(m.resetsAt - Date.now())]));
-  }
+  if (m.resetsAt && m.resetsAt > Date.now()) notes.push(t('resetsIn', [durationLabel(m.resetsAt - Date.now())]));
   if (notes.length) box.append(el('div', 'm-reset', notes.join(' · ')));
   return box;
 }
 
+/* ============ ADD / DRAG / HELPERS ============ */
 /** @param {import('../adapters/index.js').Adapter} adapter */
 function addRow(adapter) {
   const row = el('div', 'add-row');
@@ -273,58 +323,60 @@ function addRow(adapter) {
   left.append(nameLine);
   left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
   row.append(left);
-
   const btn = /** @type {HTMLButtonElement} */ (el('button', 'enable-btn', t('enable')));
   btn.addEventListener('click', async () => {
     const ok = await chrome.permissions.request({ origins: [adapter.origin] });
-    if (ok) {
-      await render();
-      await requestRefresh();
-    }
+    if (ok) { await render(); await requestRefresh(); }
   });
   row.append(btn);
   return row;
 }
 
-/** @param {import('../adapters/index.js').Adapter} adapter */
-async function removePlatform(adapter) {
-  await chrome.permissions.remove({ origins: [adapter.origin] });
-  await chrome.storage.local.remove(`snap.${adapter.id}`);
-  await render();
+/** @param {HTMLElement} art @param {string} pid */
+function wireDrag(art, pid) {
+  art.addEventListener('dragstart', () => { dragId = pid; art.classList.add('drag'); });
+  art.addEventListener('dragend', () => { dragId = null; art.classList.remove('drag'); document.querySelectorAll('.card.over').forEach((x) => x.classList.remove('over')); });
+  art.addEventListener('dragover', (e) => { e.preventDefault(); art.classList.add('over'); });
+  art.addEventListener('dragleave', () => art.classList.remove('over'));
+  art.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    if (!dragId || dragId === pid) return;
+    const ids = [...$cards.querySelectorAll('.card')].map((c) => /** @type {HTMLElement} */ (c).dataset.pid || '');
+    const from = ids.indexOf(dragId), to = ids.indexOf(pid);
+    if (from < 0 || to < 0) return;
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    await setOrder(ids);
+  });
 }
 
 /** @param {number} ms */
 function durationLabel(ms) {
   const totalMin = Math.max(1, Math.round(ms / 60_000));
-  const d = Math.floor(totalMin / 1440);
-  const h = Math.floor((totalMin % 1440) / 60);
-  const min = totalMin % 60;
+  const d = Math.floor(totalMin / 1440), h = Math.floor((totalMin % 1440) / 60), min = totalMin % 60;
   if (d > 0) return `${d} d ${h} h`;
   if (h > 0) return `${h} h ${String(min).padStart(2, '0')} m`;
   return `${min} m`;
 }
 
-/** @param {number} ts */
-function agoLabel(ts) {
-  const min = Math.round((Date.now() - ts) / 60_000);
-  if (min < 1) return t('justNow');
-  return t('updatedAgo', [min < 60 ? `${min} m` : `${Math.floor(min / 60)} h`]);
+const ICONS = {
+  menu: 'M12 5a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 12 5zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4z',
+  chevron: 'M6 9l6 6 6-6',
+  pin: 'M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z',
+  eye: 'M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z',
+  'eye-off': 'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
+};
+/** @param {keyof typeof ICONS} name @param {string} title */
+function iconBtn(name, title) {
+  const btn = /** @type {HTMLButtonElement} */ (el('button', 'icon-btn small'));
+  btn.title = title;
+  const filled = name === 'menu' || name === 'pin' || name === 'eye' || name === 'eye-off';
+  btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name]}" ${filled ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'}/></svg>`;
+  return btn;
 }
 
-const ICONS = {
-  gear: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.5 4a6.7 6.7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2.1-1.3L15.6 3h-4l-.4 2.6a7 7 0 0 0-2.1 1.3l-2.3-1-2 3.4 2 1.5a6.7 6.7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2.1 1.3l.4 2.6h4l.4-2.6a7 7 0 0 0 2.1-1.3l2.3 1 2-3.4-2-1.5c.06-.4.1-.8.1-1.2z',
-  eye: 'M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z',
-  'eye-off':
-    'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
-};
-
-/**
- * Mini gráfico de tendencia (area + línea) de una serie 0-100.
- * @param {number[]} vals
- * @param {'ok'|'warn'|'crit'} cls
- */
+/** @param {number[]} vals @param {'ok'|'warn'|'crit'} cls */
 function sparkEl(vals, cls) {
-  const w = 52, h = 15;
+  const w = 50, h = 15;
   const step = w / (vals.length - 1);
   const pts = vals.map((v, i) => [i * step, h - (Math.max(0, Math.min(100, v)) / 100) * (h - 2) - 1]);
   const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
@@ -333,34 +385,17 @@ function sparkEl(vals, cls) {
   const span = el('span', `spark sp-${cls}`);
   span.innerHTML =
     `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">` +
-    `<path class="sp-area" d="${area}"/>` +
-    `<path class="sp-line" d="${line}" fill="none"/>` +
+    `<path class="sp-area" d="${area}"/><path class="sp-line" d="${line}" fill="none"/>` +
     `<circle class="sp-dot" cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="1.6"/></svg>`;
   return span;
 }
 
-/** @param {keyof typeof ICONS} name @param {string} title */
-function iconBtn(name, title) {
-  const btn = /** @type {HTMLButtonElement} */ (el('button', 'icon-btn small'));
-  btn.title = title;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name]}" fill="currentColor"/></svg>`;
-  return btn;
-}
-
-/**
- * @param {string} tag
- * @param {string} className
- * @param {string|undefined} [text]
- */
+/** @param {string} tag @param {string} className @param {string|undefined} [text] */
 function el(tag, className, text = undefined) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return /** @type {HTMLElement} */ (node);
 }
-
 /** @param {string} id @param {string} text */
-function setText(id, text) {
-  const node = document.getElementById(id);
-  if (node) node.textContent = text;
-}
+function setText(id, text) { const n = document.getElementById(id); if (n) n.textContent = text; }

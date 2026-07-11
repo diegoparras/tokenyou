@@ -7,7 +7,6 @@ import {
 } from '../adapters/custom.js';
 import { getNotifyPrefs, setNotifyPrefs } from '../lib/notify.js';
 import {
-  getBadgePlatform, setBadgePlatform,
   getRefreshMinutes, refreshMinutesFor, setRefreshForPlatform, REFRESH_CHOICES,
 } from '../lib/prefs.js';
 import { getAllAdapters } from '../adapters/index.js';
@@ -199,32 +198,15 @@ async function initNotifications() {
 /** Ícono (qué plataforma muestra el badge) + frecuencia de actualización por plataforma. */
 async function initIconAndRefresh() {
   setText('prefs-title', t('prefsTitle'));
-  setText('badge-lbl', t('badgeLabel'));
   setText('refresh-intro', t('refreshIntro'));
 
-  const [granted, adapters, badge, refresh] = await Promise.all([
+  const [granted, adapters, refresh] = await Promise.all([
     chrome.permissions.getAll(),
     getAllAdapters(),
-    getBadgePlatform(),
     getRefreshMinutes(),
   ]);
   const origins = granted.origins ?? [];
   const enabled = adapters.filter((a) => origins.includes(a.origin));
-
-  // Selector del badge: "peor de todas" + cada plataforma activa.
-  const $badge = /** @type {HTMLSelectElement} */ (document.getElementById('badge-select'));
-  const optAll = document.createElement('option');
-  optAll.value = '';
-  optAll.textContent = t('badgeWorstAll');
-  const opts = enabled.map((a) => {
-    const o = document.createElement('option');
-    o.value = a.id;
-    o.textContent = a.name;
-    return o;
-  });
-  $badge.replaceChildren(optAll, ...opts);
-  $badge.value = badge ?? '';
-  $badge.addEventListener('change', () => void setBadgePlatform($badge.value || null));
 
   // Frecuencia por plataforma.
   const $list = /** @type {HTMLElement} */ (document.getElementById('refresh-list'));

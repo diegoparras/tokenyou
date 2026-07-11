@@ -98,6 +98,9 @@
     },
     'prefs.hiddenMeters': [],
     'prefs.notify': { reset: true, threshold: 85 },
+    'prefs.pins': ['claude/session', 'chatgpt/primary', 'grok/default'],
+    'prefs.collapsed': ['gemini', 'grok', 'perplexity', 'custom-cursor', 'abacus'],
+    'prefs.order': [],
   };
 
   // Series sintéticas de historial para ver los sparklines en el preview.

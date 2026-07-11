@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>TokenYou — mockup pins/colapso/orden</title>
+<style>
+  :root {
+    --bg:#FAFBFC; --surface:#FFFFFF; --surface-2:#F1F4F6;
+    --ink:#1A2530; --ink-2:#4A5A68; --ink-3:#7B8A96; --line:#DDE4E9;
+    --accent:#0F766E; --ok:#15803D; --warn:#B45309; --crit:#B91C1C; --track:#E4E9ED;
+    --mono:"Cascadia Code","SF Mono",ui-monospace,Consolas,monospace;
+    --sans:system-ui,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0E1620; --surface:#141F2B; --surface-2:#1B2836; --ink:#E8EEF3; --ink-2:#A8B8C4; --ink-3:#6E8090; --line:#263644; --accent:#2DD4BF; --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171; --track:#23313F; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#6b7680; font-family:var(--sans); display:flex; gap:40px; justify-content:center; align-items:flex-start; padding:36px 20px 80px; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .cap { font-family:var(--mono); font-size:12px; color:#e8eef3; max-width:380px; text-align:center; line-height:1.5; }
+  .cap b { color:#7fe9dc; }
+  .device { width:380px; background:var(--bg); border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.35); border-top:2px solid var(--accent); overflow:hidden; }
+
+  header { display:flex; align-items:center; gap:12px; padding:14px 14px 0; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; }
+  .brand svg { width:20px; height:20px; color:var(--accent); }
+  .head-sp { flex:1; }
+  .head-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .head-btns { display:flex; gap:6px; }
+  .updated { font-family:var(--mono); font-size:10px; color:var(--ink-3); }
+  .ibtn { width:29px; height:29px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink-2); display:grid; place-items:center; cursor:pointer; transition:color .15s,border-color .15s,background .15s; }
+  .ibtn:hover { color:var(--accent); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--surface)); }
+  .ibtn svg { width:15px; height:15px; }
+
+  /* anillos concéntricos (hasta 3) + etiquetas al lado */
+  .ring-group { display:flex; align-items:center; gap:9px; }
+  .rings { width:48px; height:48px; position:relative; flex:none; }
+  .rings svg { width:48px; height:48px; transform:rotate(-90deg); }
+  .rings circle { fill:none; }
+  .ring-labels { display:flex; flex-direction:column; gap:2px; }
+  .rl { display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:11px; line-height:1.35; }
+  .rl i { width:7px; height:7px; border-radius:50%; flex:none; }
+  .rl .rn { color:var(--ink-2); font-weight:600; max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rl b { font-family:var(--mono); font-size:10.5px; font-weight:700; font-variant-numeric:tabular-nums; margin-left:auto; padding-left:6px; }
+  .rl.global i { background:var(--ink-3); }
+
+  main { display:flex; flex-direction:column; padding:14px; gap:14px; }
+
+  /* Un solo idioma de color por card: el ESTADO (--sc). El punto identifica la plataforma. */
+  .card { border:1.5px solid color-mix(in srgb,var(--sc,var(--line)) 40%,var(--line)); border-radius:12px; box-shadow:0 1px 2px rgba(20,40,60,.04),0 3px 10px rgba(20,40,60,.05); transition:box-shadow .2s, transform .15s, border-color .2s, background .3s; background:var(--surface); }
+  .card.state-ok   { --sc:var(--ok);   background:color-mix(in srgb,var(--ok) 7%,var(--surface)); }
+  .card.state-warn { --sc:var(--warn); background:color-mix(in srgb,var(--warn) 9%,var(--surface)); }
+  .card.state-crit { --sc:var(--crit); background:color-mix(in srgb,var(--crit) 9%,var(--surface)); }
+  /* fijada: solo un borde de estado más grueso y pleno (sin glow) */
+  .card.pinned { border-width:2px; border-color:var(--sc); }
+  .card.drag { opacity:.5; }
+  .card.over { border-color:var(--accent); border-style:dashed; }
+
+  .chead { display:flex; align-items:center; gap:9px; padding:11px 13px; cursor:grab; }
+  .chead:active { cursor:grabbing; }
+  .menu { color:var(--ink-3); display:flex; cursor:pointer; flex:none; padding:2px; margin:-2px 2px -2px -2px; border-radius:6px; transition:color .15s, background .15s; }
+  .menu:hover { color:var(--accent); background:var(--surface-2); }
+  .menu svg { width:15px; height:16px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); flex:none; }
+  .pname { font-weight:650; font-size:13.5px; white-space:nowrap; }
+  .cchip { font-family:var(--mono); font-size:9.5px; background:var(--surface-2); color:var(--ink-2); border-radius:20px; padding:2px 8px; }
+  .cacct { font-family:var(--mono); font-size:10px; color:var(--ink-3); }
+  .csp { flex:1; }
+  .collapsed-val { font-family:var(--mono); font-size:12px; font-weight:600; }
+  .mini { width:44px; height:6px; border-radius:3px; background:var(--track); overflow:hidden; flex:none; }
+  .mini i { display:block; height:100%; border-radius:3px; }
+  .chev { color:var(--ink-3); display:flex; transition:transform .2s; }
+  .chev svg { width:15px; height:15px; }
+  .card.open .chev { transform:rotate(180deg); }
+
+  .cbody { padding:0 13px 12px; display:none; }
+  .card.open .cbody { display:block; }
+
+  .meter { margin-top:11px; }
+  .m-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .m-label { font-size:12px; color:var(--ink-2); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pin { cursor:pointer; display:flex; color:var(--ink-3); opacity:.35; transition:opacity .15s,color .15s; flex:none; }
+  .pin svg { width:13px; height:13px; }
+  .pin.on { opacity:1; color:var(--pc); }
+  .meter:hover .pin { opacity:.7; }
+  .meter:hover .pin.on { opacity:1; }
+  .m-val { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); flex:none; }
+  .track { height:7px; border-radius:4px; background:var(--track); overflow:hidden; }
+  .fill { height:100%; border-radius:4px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); transition:width .5s; }
+  .m-reset { font-family:var(--mono); font-size:10px; color:var(--ink-3); margin-top:4px; }
+
+  .hint { font-family:var(--mono); font-size:10px; color:var(--ink-3); text-align:center; padding:4px 0 2px; }
+</style>
+</head>
+<body>
+
+<div class="col">
+  <div class="device" id="dev"></div>
+  <div class="cap">
+    <b>Tocá para probar:</b> el <b>alfiler</b> de cada medidor lo fija (aparece en el doble anillo del header y manda el badge). El <b>chevron</b> colapsa/expande la card. <b>Arrastrá</b> las cards para reordenar. Los fijados suben solos.
+  </div>
+</div>
+
+<script>
+  const C = {
+    claude:'#D97757', chatgpt:'#10A37F', gemini:'#4E8CF9', grok:'#8A93A6', perplexity:'#26B8CE', abacus:'#EF6C3A'
+  };
+  const cls = p => p>=85?'crit':p>=60?'warn':'ok';
+  const col = c => `var(--${c})`;
+  // datos
+  let platforms = [
+    { id:'claude', name:'Claude', chip:'Max 20x', open:true, meters:[
+      {id:'session', label:'Sesión (5 h)', pct:15, reset:'reinicia en 3 h 26 m'},
+      {id:'weekly', label:'Semana · todos los modelos', pct:4, reset:'reinicia en 6 d 20 h'},
+      {id:'fable', label:'Semana · Fable', pct:0, reset:'reinicia en 6 d 20 h'},
+      {id:'extra', label:'Uso extra (mes)', pct:22, reset:'quedan US$ 78,16'},
+    ]},
+    { id:'chatgpt', name:'ChatGPT', chip:'Plus', acct:'diegoparras@gmail.com', open:true, meters:[
+      {id:'primary', label:'Ventana de 5 h', pct:19, reset:'reinicia en 3 h 42 m'},
+      {id:'secondary', label:'Semanal', pct:3, reset:'reinicia en 6 d 17 h'},
+    ]},
+    { id:'gemini', name:'Gemini', open:false, meters:[
+      {id:'session', label:'Sesión (5 h)', pct:0, reset:'reinicia en 4 h'},
+      {id:'weekly', label:'Semanal', pct:1, reset:'reinicia en 4 d'},
+    ]},
+    { id:'grok', name:'Grok', open:false, meters:[
+      {id:'default', label:'Ventana de 4 h', pct:90, reset:'quedan 1 de 10'},
+    ]},
+    { id:'abacus', name:'Abacus ChatLLM', chip:'Pro', open:false, meters:[
+      {id:'compute', label:'Puntos de cómputo', pct:64, reset:'reinicia en 11 d'},
+    ]},
+  ];
+  // pins: array de "platformId/meterId" (máx 3).
+  let pins = ['claude/session','chatgpt/primary','grok/default'];
+  const MAX_PINS = 3;
+
+  const worstOf = p => Math.max(...p.meters.map(m=>m.pct));
+  const meterByKey = k => { const [pid,mid]=k.split('/'); const p=platforms.find(x=>x.id===pid); const m=p?.meters.find(x=>x.id===mid); return p&&m?{p,m}:null; };
+
+  function render(){
+    const dev = document.getElementById('dev');
+    // orden: fijados (por orden de pin) primero, luego el resto en su orden actual
+    const pinnedPids = [...new Set(pins.map(k=>k.split('/')[0]))];
+    const ordered = [...platforms].sort((a,b)=>{
+      const ia = pinnedPids.includes(a.id)? pinnedPids.indexOf(a.id) : 99;
+      const ib = pinnedPids.includes(b.id)? pinnedPids.indexOf(b.id) : 99;
+      return ia-ib;
+    });
+
+    // anillos del header: hasta 3 pins (o el peor global si no hay pins)
+    const ringData = pins.length
+      ? pins.slice(0,MAX_PINS).map(k=>{const r=meterByKey(k); return r?{pct:r.m.pct, c:C[r.p.id], name:r.p.name}:null;}).filter(Boolean)
+      : [{pct:Math.max(...platforms.map(worstOf)), c:null, global:true, name:'Peor'}];
+
+    dev.innerHTML = `
+      <header>
+        <span class="brand"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
+        <div class="ring-group">${rings(ringData)}${ringLabels(ringData)}</div>
+        <span class="head-sp"></span>
+        <div class="head-btns">
+          <span class="ibtn" title="Historial de uso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+          <span class="ibtn" title="Actualizado hace 1 m — clic para actualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span>
+        </div>
+      </header>
+      <main id="main">${ordered.map(card).join('')}</main>
+    `;
+    wire();
+  }
+
+  function rings(data){
+    // hasta 3 anillos concéntricos: exterior r=20, medio r=14, interior r=8
+    const R=[20,14,8];
+    const arcs = data.slice(0,3).map((d,i)=>{
+      const r=R[i], circ=2*Math.PI*r, len=(Math.min(100,d.pct)/100)*circ;
+      const scol = d.pct>=85?'var(--crit)':d.pct>=60?'var(--warn)':'var(--ok)';
+      return `<circle cx="24" cy="24" r="${r}" stroke="var(--track)" stroke-width="3.4"/>
+              <circle cx="24" cy="24" r="${r}" stroke="${scol}" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${circ.toFixed(1)}"/>`;
+    }).join('');
+    return `<span class="rings"><svg viewBox="0 0 48 48">${arcs}</svg></span>`;
+  }
+
+  // Etiquetas a la derecha del anillo: punto de color de plataforma + % en color de estado.
+  function ringLabels(data){
+    const stCol = p => p>=85?'var(--crit)':p>=60?'var(--warn)':'var(--ok)';
+    return `<div class="ring-labels">${data.map(d=>
+      `<span class="rl ${d.global?'global':''}"><i style="background:${d.c||'var(--ink-3)'}"></i><span class="rn">${d.name||''}</span><b style="color:${stCol(d.pct)}">${d.pct}%</b></span>`
+    ).join('')}</div>`;
+  }
+
+  function card(p){
+    const worst = worstOf(p);
+    const isPinned = pins.some(k=>k.startsWith(p.id+'/'));
+    return `
+    <article class="card state-${cls(worst)} ${p.open?'open':''} ${isPinned?'pinned':''}" style="--pc:${C[p.id]}" data-pid="${p.id}" draggable="true">
+      <div class="chead" data-toggle="${p.id}">
+        <span class="menu" title="Opciones · mostrar/ocultar medidores"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span>
+        <span class="dot"></span>
+        <span class="pname">${p.name}</span>
+        ${p.chip?`<span class="cchip">${p.chip}</span>`:''}
+        ${p.acct&&p.open?`<span class="cacct">${p.acct}</span>`:''}
+        <span class="csp"></span>
+        ${!p.open?`<span class="mini"><i style="width:${worst}%;background:${col(cls(worst))}"></i></span><span class="collapsed-val" style="color:${col(cls(worst))}">${worst}%</span>`:''}
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      </div>
+      <div class="cbody">
+        ${p.meters.map(m=>meter(p,m)).join('')}
+      </div>
+    </article>`;
+  }
+
+  function meter(p,m){
+    const key=p.id+'/'+m.id;
+    const on = pins.includes(key);
+    return `<div class="meter">
+      <div class="m-row">
+        <span class="pin ${on?'on':''}" data-pin="${key}"><svg viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></span>
+        <span class="m-label">${m.label}</span>
+        <span class="m-val">${m.pct}%</span>
+      </div>
+      <div class="track"><div class="fill" style="width:${m.pct}%;background-color:${col(cls(m.pct))}"></div></div>
+      <div class="m-reset">${m.reset}</div>
+    </div>`;
+  }
+
+  function wire(){
+    // toggle colapso
+    document.querySelectorAll('[data-toggle]').forEach(el=>el.addEventListener('click',e=>{
+      if(e.target.closest('.pin')||e.target.closest('.menu')) return;
+      const p=platforms.find(x=>x.id===el.dataset.toggle); p.open=!p.open; render();
+    }));
+    // pin
+    document.querySelectorAll('[data-pin]').forEach(el=>el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const k=el.dataset.pin;
+      if(pins.includes(k)) pins=pins.filter(x=>x!==k);
+      else { pins.push(k); if(pins.length>MAX_PINS) pins.shift(); }
+      render();
+    }));
+    // drag reorder
+    let dragId=null;
+    document.querySelectorAll('.card').forEach(c=>{
+      c.addEventListener('dragstart',()=>{dragId=c.dataset.pid; c.classList.add('drag');});
+      c.addEventListener('dragend',()=>{c.classList.remove('drag'); document.querySelectorAll('.card').forEach(x=>x.classList.remove('over'));});
+      c.addEventListener('dragover',e=>{e.preventDefault(); c.classList.add('over');});
+      c.addEventListener('dragleave',()=>c.classList.remove('over'));
+      c.addEventListener('drop',e=>{
+        e.preventDefault();
+        const from=platforms.findIndex(x=>x.id===dragId), to=platforms.findIndex(x=>x.id===c.dataset.pid);
+        if(from<0||to<0||from===to) return;
+        const [m]=platforms.splice(from,1); platforms.splice(to,0,m); render();
+      });
+    });
+  }
+  render();
+</script>
+</body>
+</html>

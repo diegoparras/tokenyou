@@ -1,28 +1,66 @@
 // @ts-check
 
 const HIDDEN_KEY = 'prefs.hiddenMeters';
-const BADGE_KEY = 'prefs.badgePlatform';
 const REFRESH_KEY = 'prefs.refreshMinutes';
+const PINS_KEY = 'prefs.pins';
+const COLLAPSED_KEY = 'prefs.collapsed';
+const ORDER_KEY = 'prefs.order';
+
+export const MAX_PINS = 3;
+
+/**
+ * Medidores fijados: claves `${platformId}/${meterId}`, en orden, máx 3.
+ * El primero manda el badge del ícono; los tres alimentan los anillos del header.
+ * @returns {Promise<string[]>}
+ */
+export async function getPins() {
+  const stored = await chrome.storage.local.get(PINS_KEY);
+  const list = Array.isArray(stored[PINS_KEY]) ? stored[PINS_KEY] : [];
+  return list.filter((k) => typeof k === 'string').slice(0, MAX_PINS);
+}
+
+/** @param {string} key `${platformId}/${meterId}` @returns {Promise<string[]>} */
+export async function togglePin(key) {
+  const pins = await getPins();
+  const i = pins.indexOf(key);
+  if (i >= 0) pins.splice(i, 1);
+  else {
+    pins.push(key);
+    while (pins.length > MAX_PINS) pins.shift();
+  }
+  await chrome.storage.local.set({ [PINS_KEY]: pins });
+  return pins;
+}
+
+/** Plataformas colapsadas (una sola línea en el popup). @returns {Promise<Set<string>>} */
+export async function getCollapsed() {
+  const stored = await chrome.storage.local.get(COLLAPSED_KEY);
+  const list = Array.isArray(stored[COLLAPSED_KEY]) ? stored[COLLAPSED_KEY] : [];
+  return new Set(list.filter((k) => typeof k === 'string'));
+}
+
+/** @param {string} platformId @returns {Promise<Set<string>>} */
+export async function toggleCollapsed(platformId) {
+  const set = await getCollapsed();
+  if (set.has(platformId)) set.delete(platformId);
+  else set.add(platformId);
+  await chrome.storage.local.set({ [COLLAPSED_KEY]: [...set] });
+  return set;
+}
+
+/** Orden manual de plataformas (ids). Las no listadas van al final en su orden natural. */
+export async function getOrder() {
+  const stored = await chrome.storage.local.get(ORDER_KEY);
+  return Array.isArray(stored[ORDER_KEY]) ? stored[ORDER_KEY].filter((k) => typeof k === 'string') : [];
+}
+
+/** @param {string[]} order */
+export async function setOrder(order) {
+  await chrome.storage.local.set({ [ORDER_KEY]: order });
+}
 
 export const DEFAULT_REFRESH_MIN = 5;
 export const REFRESH_CHOICES = [1, 5, 10];
-
-/**
- * Plataforma cuyo peor medidor se muestra en el badge del ícono.
- * null = el peor medidor de todas (comportamiento por defecto).
- * @returns {Promise<string|null>}
- */
-export async function getBadgePlatform() {
-  const stored = await chrome.storage.local.get(BADGE_KEY);
-  const v = stored[BADGE_KEY];
-  return typeof v === 'string' && v ? v : null;
-}
-
-/** @param {string|null} platformId */
-export async function setBadgePlatform(platformId) {
-  if (platformId) await chrome.storage.local.set({ [BADGE_KEY]: platformId });
-  else await chrome.storage.local.remove(BADGE_KEY);
-}
 
 /** @returns {Promise<Record<string, number>>} minutos de refresco por platformId */
 export async function getRefreshMinutes() {
