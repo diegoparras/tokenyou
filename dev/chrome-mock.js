@@ -104,6 +104,29 @@
   store['hist.pts.grok/default'] = mkSeries(40, 2.0);
   store['hist.pts.custom-cursor/premium'] = mkSeries(20, 1.5);
 
+  // Buckets de actividad sintéticos (para la vista de historial / heatmap).
+  const mkActivity = (seed) => {
+    const act = {};
+    const nowHour = Math.floor(now / 3600000);
+    for (let h = 0; h < 24 * 30; h++) {
+      const hourKey = nowHour - h;
+      const date = new Date(hourKey * 3600000);
+      const hod = date.getHours();
+      const dow = date.getDay();
+      const work = hod >= 12 && hod <= 20 && dow >= 1 && dow <= 5 ? 1 : hod >= 8 && hod <= 22 && dow >= 1 && dow <= 5 ? 0.5 : 0.15;
+      const wk = dow === 0 || dow === 6 ? 0.35 : 1;
+      const noise = ((h * 13 + seed * 7) % 10) / 10;
+      const v = Math.max(0, work * wk * (0.4 + noise) * 6 - (hod < 7 ? 3 : 0));
+      if (v > 0.3) act[hourKey] = Math.round(v * 10) / 10;
+    }
+    return act;
+  };
+  store['hist.act.claude/weekly_all'] = mkActivity(1);
+  store['hist.act.claude/session'] = mkActivity(2);
+  store['hist.act.claude/weekly_scoped'] = mkActivity(3);
+  store['hist.act.chatgpt/primary'] = mkActivity(4);
+  store['hist.act.grok/default'] = mkActivity(5);
+
   const changeListeners = [];
   const grantedOrigins = [
     'https://claude.ai/*',
@@ -161,6 +184,7 @@
     runtime: {
       async sendMessage() { return { ok: true }; },
       openOptionsPage() { window.open('/src/options/options.html', '_blank'); },
+      getURL(p) { return '/' + p.replace(/^\//, ''); },
     },
   };
 })();

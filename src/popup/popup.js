@@ -22,6 +22,7 @@ const $add = /** @type {HTMLElement} */ (document.getElementById('add'));
 const $addList = /** @type {HTMLElement} */ (document.getElementById('add-list'));
 const $updated = /** @type {HTMLElement} */ (document.getElementById('updated'));
 const $refresh = /** @type {HTMLButtonElement} */ (document.getElementById('refresh'));
+const $history = /** @type {HTMLButtonElement} */ (document.getElementById('history'));
 const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('custom-link'));
 
 /** Plataformas con el panel "mostrar/ocultar medidores" abierto. @type {Set<string>} */
@@ -46,6 +47,12 @@ async function init() {
   });
 
   $refresh.addEventListener('click', () => void requestRefresh());
+  $history.title = t('historyOpen');
+  $history.addEventListener('click', () => {
+    const url = chrome.runtime.getURL('src/history/history.html');
+    if (chrome.tabs?.create) chrome.tabs.create({ url });
+    else window.open(url, '_blank');
+  });
   chrome.storage.onChanged.addListener((_changes, area) => {
     if (area === 'local') void render();
   });

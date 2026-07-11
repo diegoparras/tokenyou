@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="history.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+        <rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/>
+        <rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/>
+      </svg>
+      <h1 id="title"></h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="controls">
+      <select id="meter-select" class="sel"></select>
+      <div class="seg" id="range">
+        <button data-range="week" class="on" id="seg-week"></button>
+        <button data-range="month" id="seg-month"></button>
+      </div>
+    </div>
+
+    <p id="peak" class="peak" hidden></p>
+
+    <div id="heat-wrap" class="heat-wrap">
+      <div id="heat" class="heat"></div>
+      <div id="cols" class="cols"></div>
+      <div class="legend"><span id="leg-less"></span><span class="sw" id="legend"></span><span id="leg-more"></span></div>
+    </div>
+
+    <div class="totals" id="totals"></div>
+
+    <p id="empty" class="empty" hidden></p>
+  </main>
+
+  <script type="module" src="history.js"></script>
+</body>
+</html>
