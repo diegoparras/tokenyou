@@ -11,6 +11,8 @@ const PLATFORM_COLORS = {
   gemini: '#4E8CF9',
   grok: '#8A93A6',
   perplexity: '#26B8CE',
+  copilot: '#6E40C9',
+  abacus: '#EF6C3A',
 };
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>

@@ -9,7 +9,7 @@ const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = u
 /** Color de identidad por plataforma (igual que el popup). */
 const PLATFORM_COLORS = {
   claude: '#D97757', chatgpt: '#10A37F', gemini: '#4E8CF9',
-  grok: '#8A93A6', perplexity: '#26B8CE',
+  grok: '#8A93A6', perplexity: '#26B8CE', copilot: '#6E40C9', abacus: '#EF6C3A',
 };
 
 const $sel = /** @type {HTMLSelectElement} */ (document.getElementById('meter-select'));

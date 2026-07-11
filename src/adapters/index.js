@@ -4,6 +4,8 @@ import { chatgpt } from './chatgpt.js';
 import { gemini } from './gemini.js';
 import { grok } from './grok.js';
 import { perplexity } from './perplexity.js';
+import { abacus } from './abacus.js';
+import { copilot } from './copilot.js';
 import { getCustomServices, customToAdapter } from './custom.js';
 
 /**
@@ -21,7 +23,7 @@ import { getCustomServices, customToAdapter } from './custom.js';
  * interna cambia, solo esa plataforma se degrada ("no disponible"), el resto sigue.
  * @type {Adapter[]}
  */
-export const builtinAdapters = [claude, chatgpt, gemini, grok, perplexity];
+export const builtinAdapters = [claude, chatgpt, gemini, grok, perplexity, copilot, abacus];
 
 /**
  * Nativas + servicios personalizados definidos por el usuario.

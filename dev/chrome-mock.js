@@ -79,6 +79,23 @@
       ],
       fetchedAt: now - 40 * 1000,
     },
+    'snap.copilot': {
+      platformId: 'copilot',
+      ok: true,
+      meters: [
+        { id: 'premium', label: 'Solicitudes premium', usedPct: 0, resetsAt: null, remaining: 7000, total: 7000 },
+      ],
+      fetchedAt: now - 40 * 1000,
+    },
+    'snap.abacus': {
+      platformId: 'abacus',
+      ok: true,
+      plan: 'Pro',
+      meters: [
+        { id: 'compute', label: 'Puntos de cómputo', usedPct: 64, resetsAt: now + 11 * 24 * H, remaining: 14101, total: 39170 },
+      ],
+      fetchedAt: now - 40 * 1000,
+    },
     'prefs.hiddenMeters': [],
     'prefs.notify': { reset: true, threshold: 85 },
   };
@@ -136,6 +153,8 @@
     'https://grok.com/*',
     'https://www.perplexity.ai/*',
     'https://cursor.com/*',
+    'https://github.com/*',
+    'https://apps.abacus.ai/*',
   ];
 
   window.chrome = {

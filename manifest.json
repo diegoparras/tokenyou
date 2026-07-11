@@ -12,6 +12,8 @@
     "https://gemini.google.com/*",
     "https://grok.com/*",
     "https://www.perplexity.ai/*",
+    "https://github.com/*",
+    "https://apps.abacus.ai/*",
     "https://*/*"
   ],
   "options_ui": {

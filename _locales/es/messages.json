@@ -28,6 +28,8 @@
   "tierPageScript": { "message": "script en la página" },
   "pageScriptNote": { "message": "Esta plataforma no tiene endpoint de uso, así que activarla agrega un pequeño script en su página que cuenta tus envíos. Emite una señal vacía y nunca lee tus chats." },
   "meterExtraUsage": { "message": "Uso extra (mes)" },
+  "meterComputePoints": { "message": "Puntos de cómputo" },
+  "meterPremiumRequests": { "message": "Solicitudes premium" },
   "moneyLeft": { "message": "quedan $AMOUNT$", "placeholders": { "amount": { "content": "$1" } } },
   "customLink": { "message": "Servicios personalizados…" },
   "customChip": { "message": "personalizado" },
