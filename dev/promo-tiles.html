@@ -49,6 +49,9 @@
   .tile.marquee .subs { font-size:17px; margin-top:22px; }
   .tile.marquee .chip { font-size:14px; padding:8px 16px; margin-top:24px; }
   .tile.marquee .stage { flex:none; position:relative; z-index:2; }
+  /* popup real embebido (fiel al producto) */
+  .popframe { width:312px; border-radius:16px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
+  .popframe img { width:312px; display:block; }
 
   /* popup mock */
   .mock { width:340px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:4px 0 12px; font-size:13px; }
@@ -83,7 +86,7 @@
   <div class="glow"></div>
   <div>
     <div class="brand"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</div>
-    <h1 data-i="tagline">All your AI limits, <em data-i="tagend">in one place</em></h1>
+    <h1><span data-i="tagline">All your AI limits,</span> <em data-i="tagend">in one place</em></h1>
   </div>
   <div>
     <div class="subs">Claude · ChatGPT · Gemini · Grok · Perplexity</div>
@@ -97,22 +100,12 @@
   <div class="copy">
     <div class="eyebrow" data-i="eyebrow">Chrome extension · Open source · MIT</div>
     <div class="brand"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</div>
-    <h1 data-i="tagline2">All your AI limits, <em data-i="tagend2">in one place</em></h1>
+    <h1><span data-i="tagline2">All your AI limits,</span> <em data-i="tagend2">in one place</em></h1>
     <div class="subs" data-i="subs2">How much you've used, when it resets — without ever reading your conversations.</div>
     <div class="chip"><b>●</b><span data-i="chip2">No code on your pages · Zero telemetry · Verifiable build</span></div>
   </div>
   <div class="stage">
-    <div class="mock">
-      <div class="mh"><span class="mbr"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</span>
-        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="84.8 94.2"/><text x="18" y="21.5">90</text></svg></div>
-      <div class="c" style="--pc:#D97757"><div class="chd"><span class="dot"></span><span class="nm">Claude</span><span class="mchip">Max 20x</span></div>
-        <div class="m"><div class="mr"><span class="ml" data-i="l_session">Session (5 h)</span><span class="mv">33%</span></div><div class="trk"><div class="fl ok" style="width:33%"></div></div><div class="rsx" data-i="r1">resets in 2 h 05 m</div></div>
-        <div class="m"><div class="mr"><span class="ml" data-i="l_week">Week · Fable</span><span class="mv">64%</span></div><div class="trk"><div class="fl warn" style="width:64%"></div></div><div class="rsx" data-i="r2">resets in 3 d 0 h</div></div></div>
-      <div class="c" style="--pc:#8A93A6"><div class="chd"><span class="dot"></span><span class="nm">Grok</span></div>
-        <div class="m"><div class="mr"><span class="ml" data-i="l_win">4 h window</span><span class="mv">90%</span></div><div class="trk"><div class="fl crit" style="width:90%"></div></div><div class="rsx" data-i="r3">1 of 10 left</div></div></div>
-      <div class="c" style="--pc:#4E8CF9"><div class="chd"><span class="dot"></span><span class="nm">Gemini</span></div>
-        <div class="m"><div class="mr"><span class="ml" data-i="l_wk">Weekly</span><span class="mv">1%</span></div><div class="trk"><div class="fl ok" style="width:1%"></div></div><div class="rsx" data-i="r4">resets in 4 d 5 h</div></div></div>
-    </div>
+    <div class="popframe"><img id="mqimg" src="/dist/_popup-clean-en.png" alt=""></div>
   </div>
 </div>
 
@@ -135,6 +128,8 @@
     for (const el of document.querySelectorAll('[data-i]')) {
       const k = el.dataset.i; if (ES[k] !== undefined) el.textContent = ES[k];
     }
+    const mq = document.getElementById('mqimg');
+    if (mq) mq.src = '/dist/_popup-clean.png';
   }
   const t = params.get('t');
   if (t) {

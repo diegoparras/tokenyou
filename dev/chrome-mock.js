@@ -1,11 +1,27 @@
 // Mock de las APIs de Chrome para el preview de diseño (dev/preview.html).
 // Solo para desarrollo: nunca se incluye en el paquete de la extensión.
 (() => {
-  // --- i18n: carga sincrónica del catálogo español ---
+  // --- i18n: carga sincrónica del catálogo (es por defecto, en con ?lang=en) ---
+  const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'es';
   const xhr = new XMLHttpRequest();
-  xhr.open('GET', '/_locales/es/messages.json', false);
+  xhr.open('GET', '/_locales/' + lang + '/messages.json', false);
   xhr.send();
   const messages = JSON.parse(xhr.responseText);
+
+  // Traducción de las etiquetas de los fixtures cuando el preview corre en inglés.
+  const EN = {
+    'Sesión (5 h)': 'Session (5 h)',
+    'Semana · todos los modelos': 'Week · all models',
+    'Semana · Fable': 'Week · Fable',
+    'Uso extra (mes)': 'Extra usage (month)',
+    'US$ 21,84 · quedan US$ 78,16': 'US$ 21.84 · US$ 78.16 left',
+    'Ventana de 5 h': '5 h window',
+    'Ventana de 4 h': '4 h window',
+    'Semanal': 'Weekly',
+    'Solicitudes premium': 'Premium requests',
+    'Puntos de cómputo': 'Compute points',
+  };
+  const tr = (s) => (lang === 'en' && s in EN ? EN[s] : s);
 
   const now = Date.now();
   const H = 3600 * 1000;
@@ -102,6 +118,18 @@
     'prefs.collapsed': ['gemini', 'grok', 'perplexity', 'custom-cursor', 'abacus'],
     'prefs.order': [],
   };
+
+  // En modo inglés, traducir labels/detail de los snapshots y servicios.
+  if (lang === 'en') {
+    for (const [k, v] of Object.entries(store)) {
+      if (v && Array.isArray(v.meters)) {
+        for (const m of v.meters) { if (m.label) m.label = tr(m.label); if (m.detail) m.detail = tr(m.detail); }
+      }
+    }
+    for (const s of store['custom.services'] || []) {
+      for (const m of s.meters || []) if (m.label) m.label = tr(m.label);
+    }
+  }
 
   // Series sintéticas de historial para ver los sparklines en el preview.
   const mkSeries = (base, up, resetAt) => {

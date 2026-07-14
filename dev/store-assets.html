@@ -5,7 +5,7 @@
 <title>TokenYou — store assets</title>
 <style>
   :root {
-    --bg: #0B131C; --bg2:#0E1620; --surface:#141F2B; --surface2:#1B2836;
+    --bg:#0B131C; --bg2:#0E1620; --surface:#141F2B; --surface2:#1B2836;
     --ink:#E8EEF3; --ink2:#A8B8C4; --ink3:#6E8090; --line:#243442;
     --accent:#2DD4BF; --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171; --track:#23313F;
     --mono:"Cascadia Code","SF Mono",ui-monospace,Consolas,monospace;
@@ -13,20 +13,12 @@
   }
   * { box-sizing:border-box; }
   body { margin:0; font-family:var(--sans); background:#333; }
-  /* ?s=N → aislar una slide a 1280x800 exactos para capturar */
   body.solo { background:transparent; }
   body.solo .slide { margin:0 !important; display:none; }
   body.solo .slide.show { display:flex; }
-  .slide {
-    width:1280px; height:800px; position:relative; overflow:hidden;
-    display:flex; align-items:center; gap:70px; padding:0 96px;
-    background:radial-gradient(1100px 700px at 78% -10%, #123 0%, var(--bg) 55%);
-    color:var(--ink);
-  }
+  .slide { width:1280px; height:800px; position:relative; overflow:hidden; display:flex; align-items:center; gap:70px; padding:0 96px; background:radial-gradient(1100px 700px at 78% -10%, #123 0%, var(--bg) 55%); color:var(--ink); }
   .slide + .slide { margin-top:40px; }
-  .glow { position:absolute; width:520px; height:520px; border-radius:50%;
-    background:radial-gradient(circle, color-mix(in srgb,var(--accent) 26%,transparent), transparent 70%);
-    filter:blur(20px); right:-80px; top:-120px; pointer-events:none; }
+  .glow { position:absolute; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle, color-mix(in srgb,var(--accent) 26%,transparent), transparent 70%); filter:blur(20px); right:-80px; top:-120px; pointer-events:none; }
   .copy { flex:1; max-width:520px; position:relative; z-index:2; }
   .eyebrow { font-family:var(--mono); font-size:16px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:22px; }
   .copy h2 { font-size:56px; line-height:1.06; letter-spacing:-.03em; margin:0 0 22px; font-weight:800; }
@@ -36,40 +28,59 @@
   .pts li { display:flex; align-items:center; gap:14px; font-size:21px; color:var(--ink); }
   .pts .t { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); font-weight:800; flex:none; }
   .stage { flex:none; position:relative; z-index:2; }
+  /* el popup real, embebido como imagen (fiel al producto) */
+  .popframe { width:360px; height:600px; border-radius:18px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
+  .popframe img { width:360px; display:block; }
 
-  /* popup */
-  .mock { width:360px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:4px 0 12px; font-size:13px; }
-  .mh { display:flex; align-items:center; justify-content:space-between; padding:15px 17px 10px; }
-  .mb { display:flex; align-items:center; gap:8px; font-weight:750; font-size:15px; }
+  /* ---- popup nuevo (anillos + pins + color de estado) ---- */
+  .mock { width:364px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:0 0 14px; font-size:13px; }
+  .mh { display:flex; align-items:center; gap:11px; padding:14px 15px 8px; }
+  .mb { display:flex; align-items:center; gap:7px; font-weight:750; font-size:15px; }
   .mb svg { width:19px; height:19px; color:var(--accent); }
-  .mb b { color:var(--accent); }
-  .ring { width:32px; height:32px; }
-  .ring circle { fill:none; stroke-width:5; }
-  .rt { stroke:var(--track); } .rf { stroke:var(--crit); stroke-linecap:round; }
-  .ring text { font-family:var(--mono); font-size:12px; font-weight:600; fill:var(--ink); text-anchor:middle; }
-  .c { background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:9px 13px; padding:12px 14px; }
-  .ch { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .rgrp { display:flex; align-items:center; gap:8px; }
+  .rings { width:44px; height:44px; }
+  .rings svg { width:44px; height:44px; transform:rotate(-90deg); }
+  .rings circle { fill:none; stroke-width:3.4; stroke-linecap:round; }
+  .rlab { display:flex; flex-direction:column; gap:2px; }
+  .rl { display:flex; align-items:center; gap:6px; font-size:11px; }
+  .rl i { width:7px; height:7px; border-radius:50%; flex:none; }
+  .rl .rn { color:var(--ink2); font-weight:600; }
+  .rl b { font-family:var(--mono); font-size:10.5px; font-weight:700; margin-left:auto; padding-left:6px; }
+  .hsp { flex:1; }
+  .hbtn { width:28px; height:28px; border:1px solid var(--line); border-radius:8px; display:grid; place-items:center; color:var(--ink2); flex:none; }
+  .hbtn svg { width:15px; height:15px; }
+  .c { border-radius:12px; margin:9px 13px 0; padding:11px 13px; border:1.5px solid color-mix(in srgb,var(--sc) 40%,var(--line)); background:color-mix(in srgb,var(--sc) 8%,var(--surface)); }
+  .c.ok { --sc:var(--ok); } .c.warn { --sc:var(--warn); } .c.crit { --sc:var(--crit); }
+  .c.pin { border-width:2px; border-color:var(--sc); }
+  .ch { display:flex; align-items:center; gap:8px; }
+  .kebab { color:var(--ink3); display:flex; } .kebab svg { width:15px; height:16px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); flex:none; }
   .nm { font-weight:650; font-size:13.5px; } .chip { font-family:var(--mono); font-size:9.5px; background:var(--surface2); color:var(--ink2); border-radius:20px; padding:2px 8px; }
-  .m { margin-bottom:10px; } .m:last-child { margin-bottom:0; }
-  .mr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
-  .ml { font-size:12px; color:var(--ink2); } .mv { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); }
+  .csp { flex:1; }
+  .chev { color:var(--ink3); display:flex; } .chev svg { width:15px; height:15px; }
+  .mini { width:46px; height:6px; border-radius:3px; background:var(--track); overflow:hidden; flex:none; }
+  .mini i { display:block; height:100%; border-radius:3px; }
+  .mval { font-family:var(--mono); font-size:12px; font-weight:600; }
+  .m { margin-top:11px; }
+  .mr { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .pin { color:var(--pc); display:flex; flex:none; } .pin svg { width:13px; height:13px; }
+  .pin.off { color:var(--ink3); opacity:.4; }
+  .ml { font-size:12px; color:var(--ink2); flex:1; }
+  .mv { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); }
   .tr { position:relative; height:7px; border-radius:4px; background:var(--track); overflow:hidden; }
   .tr::before,.tr::after { content:""; position:absolute; top:1px; bottom:1px; width:1px; background:var(--bg2); opacity:.55; }
   .tr::before { left:60%; } .tr::after { left:85%; }
   .f { height:100%; border-radius:4px; background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
   .f.ok { background-color:var(--ok); } .f.warn { background-color:var(--warn); } .f.crit { background-color:var(--crit); }
-  .rs { font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:4px; }
+  .rs { font-family:var(--mono); font-size:9.5px; color:var(--ink3); margin-top:4px; }
 
-  /* platform grid slide */
-  .pgrid { display:grid; grid-template-columns:repeat(2,240px); gap:16px; }
-  .pcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
+  /* plataformas / escala */
+  .pgrid { display:grid; grid-template-columns:repeat(2,238px); gap:14px; }
+  .pcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; position:relative; overflow:hidden; }
   .pcard::before { content:""; position:absolute; left:0; top:14px; bottom:14px; width:3px; border-radius:3px; background:var(--pc); }
-  .pcard h3 { display:flex; align-items:center; gap:9px; margin:0 0 6px; font-size:18px; }
-  .pcard h3 i { width:10px; height:10px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
-  .pcard p { margin:0; font-size:14px; color:var(--ink2); }
-
-  /* scale slide */
+  .pcard h3 { display:flex; align-items:center; gap:9px; margin:0 0 5px; font-size:17px; }
+  .pcard h3 i { width:9px; height:9px; border-radius:50%; background:var(--pc); box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 18%,transparent); }
+  .pcard p { margin:0; font-size:13px; color:var(--ink2); }
   .scale { display:flex; flex-direction:column; gap:18px; width:440px; }
   .sc { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
   .sc .rg { font-family:var(--mono); font-weight:700; font-size:16px; margin-bottom:12px; }
@@ -85,28 +96,24 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="batt"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></g>
+  <g id="kebab"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></g>
+  <g id="chev"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="pin"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></g>
+  <g id="hist"><path d="M3 3v16a2 2 0 0 0 2 2h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m19 9-5 5-4-4-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="refr"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 16H3v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+</defs></svg>
+
 <!-- SLIDE 1 -->
 <div class="slide" id="s1">
   <div class="glow"></div>
   <div class="copy">
     <div class="eyebrow">Extensión · Open source · MIT</div>
     <h2>Todos tus límites de IA, <em>en un solo lugar</em></h2>
-    <p>Claude, ChatGPT, Gemini, Grok y Perplexity. Cuánto usaste, cuándo se reinicia, y un aviso antes de chocar con el límite.</p>
+    <p>Claude, ChatGPT, Gemini, Grok y Perplexity. Fijá lo que te importa, signos vitales de color y un aviso antes de chocar con el límite.</p>
   </div>
-  <div class="stage">
-    <div class="mock">
-      <div class="mh"><span class="mb"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
-        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="84.8 94.2"/><text x="18" y="21.5">90</text></svg></div>
-      <div class="c" style="--pc:#D97757"><div class="ch"><span class="dot"></span><span class="nm">Claude</span><span class="chip">Max 20x</span></div>
-        <div class="m"><div class="mr"><span class="ml">Sesión (5 h)</span><span class="mv">33%</span></div><div class="tr"><div class="f ok" style="width:33%"></div></div><div class="rs">reinicia en 2 h 05 m</div></div>
-        <div class="m"><div class="mr"><span class="ml">Semana · Fable</span><span class="mv">64%</span></div><div class="tr"><div class="f warn" style="width:64%"></div></div><div class="rs">reinicia en 3 d 0 h</div></div>
-        <div class="m"><div class="mr"><span class="ml">Uso extra (mes)</span><span class="mv">22%</span></div><div class="tr"><div class="f ok" style="width:22%"></div></div><div class="rs">US$ 21,84 / US$ 100,00</div></div></div>
-      <div class="c" style="--pc:#8A93A6"><div class="ch"><span class="dot"></span><span class="nm">Grok</span></div>
-        <div class="m"><div class="mr"><span class="ml">Ventana de 4 h</span><span class="mv">90%</span></div><div class="tr"><div class="f crit" style="width:90%"></div></div><div class="rs">quedan 1 de 10</div></div></div>
-      <div class="c" style="--pc:#4E8CF9"><div class="ch"><span class="dot"></span><span class="nm">Gemini</span></div>
-        <div class="m"><div class="mr"><span class="ml">Semanal</span><span class="mv">1%</span></div><div class="tr"><div class="f ok" style="width:1%"></div></div><div class="rs">reinicia en 4 d 5 h</div></div></div>
-    </div>
-  </div>
+  <div class="stage" id="stage1"></div>
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
 </div>
 
@@ -124,18 +131,7 @@
       <li><span class="t">✓</span>MIT + build reproducible verificable</li>
     </ul>
   </div>
-  <div class="stage">
-    <div class="mock">
-      <div class="mh"><span class="mb"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/><rect x="20.5" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>TokenYou</span>
-        <svg class="ring" viewBox="0 0 36 36"><circle class="rt" cx="18" cy="18" r="15"/><circle class="rf" cx="18" cy="18" r="15" transform="rotate(-90 18 18)" stroke-dasharray="10.4 94.2" style="stroke:var(--ok)"/><text x="18" y="21.5">11</text></svg></div>
-      <div class="c" style="--pc:#10A37F"><div class="ch"><span class="dot"></span><span class="nm">ChatGPT</span><span class="chip">Plus</span></div>
-        <div class="m"><div class="mr"><span class="ml">Ventana de 5 h</span><span class="mv">11%</span></div><div class="tr"><div class="f ok" style="width:11%"></div></div><div class="rs">reinicia en 3 h 57 m</div></div>
-        <div class="m"><div class="mr"><span class="ml">Semanal</span><span class="mv">2%</span></div><div class="tr"><div class="f ok" style="width:2%"></div></div><div class="rs">reinicia en 6 d 21 h</div></div></div>
-      <div class="c" style="--pc:#26B8CE"><div class="ch"><span class="dot"></span><span class="nm">Perplexity</span></div>
-        <div class="m"><div class="mr"><span class="ml">Búsquedas Pro</span><span class="mv">quedan 287</span></div></div>
-        <div class="m"><div class="mr"><span class="ml">Research</span><span class="mv">quedan 12</span></div></div></div>
-    </div>
-  </div>
+  <div class="stage" id="stage2"></div>
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
 </div>
 
@@ -144,8 +140,8 @@
   <div class="glow"></div>
   <div class="copy">
     <div class="eyebrow">Plataformas</div>
-    <h2>Cinco de fábrica. <em>Las tuyas también.</em></h2>
-    <p>Y cualquier herramienta con endpoint de uso —Cursor, Copilot— se agrega como servicio propio, sin tocar código.</p>
+    <h2>Siete de fábrica. <em>Las tuyas también.</em></h2>
+    <p>Y cualquier herramienta con endpoint de uso se agrega como servicio propio, sin tocar código.</p>
   </div>
   <div class="stage">
     <div class="pgrid">
@@ -154,7 +150,7 @@
       <div class="pcard" style="--pc:#4E8CF9"><h3><i></i>Gemini</h3><p>Cómputo actual y semanal, dato real.</p></div>
       <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Consultas restantes por ventana.</p></div>
       <div class="pcard" style="--pc:#26B8CE"><h3><i></i>Perplexity</h3><p>Pro, Research, Labs y agénticas.</p></div>
-      <div class="pcard" style="--pc:#2DD4BF"><h3><i></i>Los tuyos</h3><p>Cualquier endpoint JSON de uso.</p></div>
+      <div class="pcard" style="--pc:#6E40C9"><h3><i></i>Copilot · Abacus</h3><p>Premium requests y puntos de cómputo.</p></div>
     </div>
   </div>
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
@@ -166,7 +162,7 @@
   <div class="copy">
     <div class="eyebrow">De un vistazo</div>
     <h2>Verde, ámbar, <em>rojo.</em></h2>
-    <p>La misma escala en cada barra y en el badge del ícono. Dos marcas fijas te muestran cuánto falta para la próxima zona.</p>
+    <p>Cada card habla un solo color según su estado: borde, fondo y barras. El punto identifica la plataforma.</p>
   </div>
   <div class="stage">
     <div class="scale">
@@ -179,13 +175,32 @@
 </div>
 
 <script>
-  // ?s=N aísla la slide N para capturarla sola a 1280x800.
+  const T = {
+    session:'Sesión (5 h)', week:'Semana · todos los modelos', fable:'Semana · Fable', extra:'Uso extra (mes)',
+    win5:'Ventana de 5 h', weekly:'Semanal', win4:'Ventana de 4 h', weeklyG:'Semanal',
+    reset2:'reinicia en 2 h 05 m', reset3:'reinicia en 3 d 0 h', money:'US$ 21,84 · quedan US$ 78,16',
+    reset4:'reinicia en 4 h 00 m', reset6:'reinicia en 6 d 21 h', left:'quedan 1 de 10', reset4d:'reinicia en 4 d 5 h'
+  };
+  const st = p => p>=85?'crit':p>=60?'warn':'ok';
+  const ring = (data)=>{ const R=[20,14,8]; let arcs='';
+    data.forEach((d,i)=>{ const r=R[i], c=2*Math.PI*r, len=(d.pct/100)*c, s=st(d.pct)==='crit'?'var(--crit)':st(d.pct)==='warn'?'var(--warn)':'var(--ok)';
+      arcs+=`<circle cx="24" cy="24" r="${r}" class="t" stroke="var(--track)"/><circle cx="24" cy="24" r="${r}" stroke="${s}" stroke-dasharray="${len.toFixed(1)} ${c.toFixed(1)}"/>`; });
+    return `<span class="rings"><svg viewBox="0 0 48 48">${arcs}</svg></span>`; };
+  const labels = (data)=>`<div class="rlab">${data.map(d=>{const s=st(d.pct); const sc=s==='crit'?'var(--crit)':s==='warn'?'var(--warn)':'var(--ok)';
+    return `<span class="rl"><i style="background:${d.c}"></i><span class="rn">${d.n}</span><b style="color:${sc}">${d.pct}%</b></span>`;}).join('')}</div>`;
+  const header = (data)=>`<div class="mh"><span class="mb"><svg viewBox="0 0 24 24"><use href="#batt"/></svg>TokenYou</span>
+    <span class="rgrp">${ring(data)}${labels(data)}</span><span class="hsp"></span>
+    <span class="hbtn"><svg viewBox="0 0 24 24"><use href="#hist"/></svg></span><span class="hbtn"><svg viewBox="0 0 24 24"><use href="#refr"/></svg></span></div>`;
+  const meter = (m)=>`<div class="m"><div class="mr"><span class="pin ${m.pin?'':'off'}"><svg viewBox="0 0 24 24" fill="${m.pin?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><use href="#pin"/></svg></span><span class="ml">${m.l}</span><span class="mv">${m.v}%</span></div><div class="tr"><div class="f ${st(m.v)}" style="width:${m.v}%"></div></div><div class="rs">${m.r}</div></div>`;
+  const cardOpen = (o)=>`<div class="c ${st(o.worst)} ${o.pin?'pin':''}" style="--pc:${o.c}"><div class="ch"><span class="kebab"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#kebab"/></svg></span><span class="dot"></span><span class="nm">${o.n}</span>${o.chip?`<span class="chip">${o.chip}</span>`:''}<span class="csp"></span><span class="chev"><svg viewBox="0 0 24 24"><use href="#chev"/></svg></span></div>${o.meters.map(meter).join('')}</div>`;
+  const cardCol = (o)=>`<div class="c ${st(o.v)}" style="--pc:${o.c}"><div class="ch"><span class="kebab"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#kebab"/></svg></span><span class="dot"></span><span class="nm">${o.n}</span><span class="csp"></span><span class="mini"><i class="f ${st(o.v)}" style="width:${o.v}%;background-color:var(--${st(o.v)})"></i></span><span class="mval" style="color:var(--${st(o.v)})">${o.v}%</span><span class="chev"><svg viewBox="0 0 24 24"><use href="#chev"/></svg></span></div></div>`;
+
+  const popup = `<div class="popframe"><img src="/dist/_popup-clean.png" alt=""></div>`;
+  document.getElementById('stage1').innerHTML = popup;
+  document.getElementById('stage2').innerHTML = popup;
+
   const n = new URLSearchParams(location.search).get('s');
-  if (n) {
-    document.body.classList.add('solo');
-    const el = document.getElementById('s' + n);
-    if (el) el.classList.add('show');
-  }
+  if (n) { document.body.classList.add('solo'); const el=document.getElementById('s'+n); if(el) el.classList.add('show'); }
 </script>
 </body>
 </html>
