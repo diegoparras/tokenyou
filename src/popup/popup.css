@@ -88,6 +88,26 @@ main { display: flex; flex-direction: column; padding: 14px; gap: 14px; }
 .chead .spacer { flex: 1; }
 .chev { color: var(--ink-3); }
 
+/* menú ⋮ de la card */
+.card-menu {
+  position: absolute; top: 38px; left: 10px; z-index: 20; min-width: 176px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(20,40,60,.18); padding: 5px;
+  display: flex; flex-direction: column; gap: 1px;
+  animation: menuIn 0.13s ease both;
+}
+@keyframes menuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card-menu { animation: none; } }
+.menu-item {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  background: none; border: none; color: var(--ink-2); font: inherit; font-size: 12.5px;
+  padding: 8px 9px; border-radius: 7px; cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.menu-item:hover { background: var(--surface-2); color: var(--ink); }
+.menu-item.danger { color: var(--crit); }
+.menu-item.danger:hover { background: color-mix(in srgb, var(--crit) 12%, var(--surface)); }
+.menu-item .mi-ic { width: 15px; height: 15px; flex: none; opacity: 0.85; }
+
 .mini-track { position: relative; width: 46px; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; flex: none; }
 .mini-fill { height: 100%; border-radius: 3px; }
 .mini-val { font-family: var(--mono); font-size: 12px; font-weight: 600; flex: none; }
@@ -136,9 +156,12 @@ section { padding: 8px 16px; }
 #empty { text-align: center; padding: 22px 20px 12px; }
 #empty h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: -0.01em; }
 #empty p { font-size: 12px; color: var(--ink-2); margin: 0 auto; max-width: 30ch; line-height: 1.5; }
-#add h2 { color: var(--ink-3); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 4px; }
+#add h2, #hidden h2 { color: var(--ink-3); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 4px; }
 #add p { font-size: 12px; color: var(--ink-2); margin: 0 0 10px; line-height: 1.5; }
-#add-list { display: flex; flex-direction: column; gap: 6px; }
+#hidden h2 { margin-bottom: 8px; }
+#add-list, #hidden-list { display: flex; flex-direction: column; gap: 6px; }
+#hidden .add-row { opacity: 0.72; }
+#hidden .add-row:hover { opacity: 1; }
 .add-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; transition: border-color 0.15s; }
 .add-row:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
 .add-left { min-width: 0; padding-right: 10px; }

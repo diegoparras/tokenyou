@@ -1,7 +1,7 @@
 // @ts-check
 import { getAllAdapters } from './adapters/index.js';
 import { worstPct } from './lib/quota.js';
-import { getHiddenMeters, getPins, getRefreshMinutes, refreshMinutesFor } from './lib/prefs.js';
+import { getHiddenMeters, getHiddenPlatforms, getPins, getRefreshMinutes, refreshMinutesFor } from './lib/prefs.js';
 import { recordSnapshot } from './lib/history.js';
 import { maybeNotify } from './lib/notify.js';
 
@@ -17,7 +17,7 @@ chrome.permissions.onRemoved.addListener(() => { void syncAlarms(); void pruneRe
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes['prefs.refreshMinutes']) void syncAlarms();
-  if (changes['prefs.pins'] || changes['prefs.hiddenMeters']) void updateBadge();
+  if (changes['prefs.pins'] || changes['prefs.hiddenMeters'] || changes['prefs.hiddenPlatforms']) void updateBadge();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -113,26 +113,35 @@ async function refreshOne(adapter) {
   await maybeNotify(adapter, before[`snap.${adapter.id}`], snap);
 }
 
-/** Borra snapshots de plataformas cuyo permiso se revocó. */
+/** Borra snapshots y limpia el estado "oculta" de plataformas cuyo permiso se revocó. */
 async function pruneRevoked() {
   const [granted, adapters] = await Promise.all([chrome.permissions.getAll(), getAllAdapters()]);
   const origins = granted.origins ?? [];
-  const stale = adapters
-    .filter((a) => !origins.includes(a.origin))
-    .map((a) => `snap.${a.id}`);
+  const revoked = adapters.filter((a) => !origins.includes(a.origin));
+  const stale = revoked.map((a) => `snap.${a.id}`);
   if (stale.length) await chrome.storage.local.remove(stale);
+
+  // Sacar las plataformas revocadas del set de "ocultas" (ya no aplica).
+  const hiddenPlatforms = await getHiddenPlatforms();
+  const revokedIds = revoked.map((a) => a.id);
+  if (revokedIds.some((id) => hiddenPlatforms.has(id))) {
+    const next = [...hiddenPlatforms].filter((id) => !revokedIds.includes(id));
+    await chrome.storage.local.set({ 'prefs.hiddenPlatforms': next });
+  }
   await updateBadge();
 }
 
 async function updateBadge() {
   const enabled = await enabledAdapters();
   const keys = enabled.map((a) => `snap.${a.id}`);
-  const [stored, hidden, pins] = await Promise.all([
+  const [stored, hidden, pins, hiddenPlatforms] = await Promise.all([
     chrome.storage.local.get(keys),
     getHiddenMeters(),
     getPins(),
+    getHiddenPlatforms(),
   ]);
-  // El badge sigue el medidor fijado #1; si no hay pins, el peor de todos.
+  // El badge sigue el medidor fijado #1; si no hay pins, el peor de los visibles
+  // (las plataformas ocultas se siguen midiendo pero no cuentan para el ícono).
   let worst = null;
   if (pins.length) {
     const [pid, mid] = pins[0].split('/');
@@ -140,7 +149,11 @@ async function updateBadge() {
     const m = snap?.ok ? snap.meters.find((/** @type {any} */ x) => x.id === mid) : null;
     if (m && typeof m.usedPct === 'number') worst = Math.round(m.usedPct);
   } else {
-    worst = worstPct(Object.values(stored), hidden);
+    const visibleSnaps = enabled
+      .filter((a) => !hiddenPlatforms.has(a.id))
+      .map((a) => stored[`snap.${a.id}`])
+      .filter(Boolean);
+    worst = worstPct(visibleSnaps, hidden);
   }
 
   if (worst === null) {

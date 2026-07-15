@@ -1,6 +1,7 @@
 // @ts-check
 
 const HIDDEN_KEY = 'prefs.hiddenMeters';
+const HIDDEN_PLATFORMS_KEY = 'prefs.hiddenPlatforms';
 const REFRESH_KEY = 'prefs.refreshMinutes';
 const PINS_KEY = 'prefs.pins';
 const COLLAPSED_KEY = 'prefs.collapsed';
@@ -30,6 +31,33 @@ export async function togglePin(key) {
   }
   await chrome.storage.local.set({ [PINS_KEY]: pins });
   return pins;
+}
+
+/** Quita todos los pins de una plataforma (al ocultarla o quitarla). @param {string} platformId */
+export async function unpinPlatform(platformId) {
+  const pins = await getPins();
+  const next = pins.filter((k) => k.split('/')[0] !== platformId);
+  if (next.length !== pins.length) await chrome.storage.local.set({ [PINS_KEY]: next });
+  return next;
+}
+
+/**
+ * Plataformas ocultas del popup. Mantienen el permiso y se siguen midiendo en
+ * segundo plano (para el historial); solo no se muestran ni cuentan para el badge.
+ * @returns {Promise<Set<string>>}
+ */
+export async function getHiddenPlatforms() {
+  const stored = await chrome.storage.local.get(HIDDEN_PLATFORMS_KEY);
+  const list = Array.isArray(stored[HIDDEN_PLATFORMS_KEY]) ? stored[HIDDEN_PLATFORMS_KEY] : [];
+  return new Set(list.filter((k) => typeof k === 'string'));
+}
+
+/** @param {string} platformId @param {boolean} hidden @returns {Promise<Set<string>>} */
+export async function setPlatformHidden(platformId, hidden) {
+  const set = await getHiddenPlatforms();
+  if (hidden) set.add(platformId); else set.delete(platformId);
+  await chrome.storage.local.set({ [HIDDEN_PLATFORMS_KEY]: [...set] });
+  return set;
 }
 
 /** Plataformas colapsadas (una sola línea en el popup). @returns {Promise<Set<string>>} */

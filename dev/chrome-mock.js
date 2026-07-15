@@ -228,9 +228,18 @@
     },
     permissions: {
       async getAll() { return { origins: [...grantedOrigins], permissions: ['storage', 'alarms'] }; },
-      async contains() { return true; },
-      async request() { return true; },
-      async remove() { return true; },
+      async contains(q) { return (q?.origins || []).every((o) => grantedOrigins.includes(o)); },
+      async request(q) {
+        for (const o of q?.origins || []) if (!grantedOrigins.includes(o)) grantedOrigins.push(o);
+        return true;
+      },
+      async remove(q) {
+        for (const o of q?.origins || []) {
+          const i = grantedOrigins.indexOf(o);
+          if (i >= 0) grantedOrigins.splice(i, 1);
+        }
+        return true;
+      },
     },
     runtime: {
       async sendMessage() { return { ok: true }; },

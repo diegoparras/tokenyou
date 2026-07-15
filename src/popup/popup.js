@@ -3,6 +3,7 @@ import { getAllAdapters } from '../adapters/index.js';
 import { worstPct } from '../lib/quota.js';
 import {
   getHiddenMeters, toggleHiddenMeter,
+  getHiddenPlatforms, setPlatformHidden, unpinPlatform,
   getPins, togglePin, getCollapsed, toggleCollapsed, getOrder, setOrder, MAX_PINS,
 } from '../lib/prefs.js';
 import { getSeries } from '../lib/history.js';
@@ -22,6 +23,8 @@ const stateOf = (pct) => (pct >= 85 ? 'crit' : pct >= 60 ? 'warn' : 'ok');
 
 const $cards = /** @type {HTMLElement} */ (document.getElementById('cards'));
 const $empty = /** @type {HTMLElement} */ (document.getElementById('empty'));
+const $hidden = /** @type {HTMLElement} */ (document.getElementById('hidden'));
+const $hiddenList = /** @type {HTMLElement} */ (document.getElementById('hidden-list'));
 const $add = /** @type {HTMLElement} */ (document.getElementById('add'));
 const $addList = /** @type {HTMLElement} */ (document.getElementById('add-list'));
 const $ringGroup = /** @type {HTMLElement} */ (document.getElementById('ring-group'));
@@ -29,8 +32,10 @@ const $refresh = /** @type {HTMLButtonElement} */ (document.getElementById('refr
 const $history = /** @type {HTMLButtonElement} */ (document.getElementById('history'));
 const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('custom-link'));
 
-/** Plataformas con el menú "mostrar/ocultar medidores" abierto. @type {Set<string>} */
+/** Plataformas en modo "elegir medidores" (ojitos visibles). @type {Set<string>} */
 const editing = new Set();
+/** Plataforma con el menú ⋮ desplegado (una sola a la vez). @type {string|null} */
+let menuFor = null;
 let firstPaint = true;
 let dragId = /** @type {string|null} */ (null);
 
@@ -56,6 +61,14 @@ async function init() {
   chrome.storage.onChanged.addListener((_c, area) => { if (area === 'local') void render(); });
   setInterval(() => void render(), 30_000);
 
+  // Cerrar el menú ⋮ al hacer clic fuera de él.
+  document.addEventListener('click', (e) => {
+    if (menuFor === null) return;
+    if (e.target instanceof Element && e.target.closest('.card-menu, .menu-btn')) return;
+    menuFor = null;
+    void render();
+  });
+
   await render();
   await requestRefresh();
 }
@@ -67,19 +80,22 @@ async function requestRefresh() {
 }
 
 async function render() {
-  const [granted, adapters, hidden, pins, collapsed, order] = await Promise.all([
+  const [granted, adapters, hidden, hiddenPlatforms, pins, collapsed, order] = await Promise.all([
     chrome.permissions.getAll(), getAllAdapters(),
-    getHiddenMeters(), getPins(), getCollapsed(), getOrder(),
+    getHiddenMeters(), getHiddenPlatforms(), getPins(), getCollapsed(), getOrder(),
   ]);
   const origins = granted.origins ?? [];
   const enabled = adapters.filter((a) => origins.includes(a.origin));
   const disabled = adapters.filter((a) => !origins.includes(a.origin));
+  // Con permiso pero escondidas del popup vs. las que se muestran.
+  const visible = enabled.filter((a) => !hiddenPlatforms.has(a.id));
+  const hiddenEnabled = enabled.filter((a) => hiddenPlatforms.has(a.id));
 
   const stored = await chrome.storage.local.get(enabled.map((a) => `snap.${a.id}`));
 
   // Series de historial (sparklines) de los medidores con % visibles.
   const seriesIds = [];
-  for (const a of enabled) {
+  for (const a of visible) {
     const s = stored[`snap.${a.id}`];
     if (s?.ok) for (const m of s.meters) if (typeof m.usedPct === 'number') seriesIds.push(`${a.id}/${m.id}`);
   }
@@ -87,7 +103,7 @@ async function render() {
 
   // Orden: pins primero (por su orden), luego el orden manual, luego el natural.
   const pinnedPids = [...new Set(pins.map((k) => k.split('/')[0]))];
-  const sorted = [...enabled].sort((a, b) => rank(a, pinnedPids, order) - rank(b, pinnedPids, order));
+  const sorted = [...visible].sort((a, b) => rank(a, pinnedPids, order) - rank(b, pinnedPids, order));
 
   const cards = sorted.map((a, i) => {
     const node = card(a, stored[`snap.${a.id}`], { hidden, pins, collapsed, series });
@@ -97,10 +113,14 @@ async function render() {
   $cards.replaceChildren(...cards);
   $empty.hidden = enabled.length > 0;
 
+  $hidden.hidden = hiddenEnabled.length === 0;
+  setText('hidden-title', t('hiddenTitle'));
+  $hiddenList.replaceChildren(...hiddenEnabled.map(hiddenRow));
+
   $add.hidden = disabled.length === 0;
   $addList.replaceChildren(...disabled.map(addRow));
 
-  renderRings(enabled, stored, pins, hidden);
+  renderRings(visible, stored, pins, hidden);
   firstPaint = false;
 }
 
@@ -200,10 +220,10 @@ function card(adapter, snap, ctx) {
   const head = el('div', 'chead');
   const menu = iconBtn('menu', t('cardMenu'));
   menu.classList.add('menu-btn');
-  if (editing.has(adapter.id)) menu.classList.add('active');
+  if (menuFor === adapter.id || editing.has(adapter.id)) menu.classList.add('active');
   menu.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (editing.has(adapter.id)) editing.delete(adapter.id); else editing.add(adapter.id);
+    menuFor = menuFor === adapter.id ? null : adapter.id;
     void render();
   });
   head.append(menu);
@@ -233,6 +253,9 @@ function card(adapter, snap, ctx) {
     if (snap?.ok && meters.length) void toggleCollapsed(adapter.id);
   });
   art.append(head);
+
+  // Menú ⋮ desplegado (se superpone; disponible aun en estado colapsado o sin sesión).
+  if (menuFor === adapter.id) art.append(menuPanel(adapter, !!(snap?.ok && meters.length)));
 
   if (isCollapsed) return art;
 
@@ -311,7 +334,80 @@ function meterEl(pid, m, opts, points) {
   return box;
 }
 
+/* ============ MENÚ ⋮ DE LA CARD ============ */
+/**
+ * @param {import('../adapters/index.js').Adapter} adapter
+ * @param {boolean} canChooseMeters hay medidores para mostrar/ocultar
+ */
+function menuPanel(adapter, canChooseMeters) {
+  const panel = el('div', 'card-menu');
+  panel.addEventListener('click', (e) => e.stopPropagation());
+  if (canChooseMeters) {
+    const isEd = editing.has(adapter.id);
+    panel.append(menuItem('sliders', t(isEd ? 'menuDoneMeters' : 'menuChooseMeters'), false, () => chooseMeters(adapter, isEd)));
+  }
+  panel.append(menuItem('eye-off', t('menuHidePlatform'), false, () => hidePlatform(adapter)));
+  panel.append(menuItem('trash', t('menuRemovePlatform'), true, () => removePlatform(adapter)));
+  return panel;
+}
+
+/**
+ * @param {keyof typeof ICONS} iconName @param {string} label
+ * @param {boolean} danger @param {() => void|Promise<void>} onClick
+ */
+function menuItem(iconName, label, danger, onClick) {
+  const btn = el('button', 'menu-item' + (danger ? ' danger' : ''));
+  btn.innerHTML = `<svg class="mi-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[iconName]}"/></svg>`;
+  btn.append(el('span', 'mi-label', label));
+  btn.addEventListener('click', (e) => { e.stopPropagation(); void onClick(); });
+  return btn;
+}
+
+/** Alterna el modo "elegir medidores" (ojitos). @param {import('../adapters/index.js').Adapter} adapter @param {boolean} isEditing */
+async function chooseMeters(adapter, isEditing) {
+  menuFor = null;
+  if (isEditing) { editing.delete(adapter.id); await render(); return; }
+  const collapsed = await getCollapsed();
+  if (collapsed.has(adapter.id)) await toggleCollapsed(adapter.id); // expandir para ver los ojitos
+  editing.add(adapter.id);
+  await render();
+}
+
+/** Esconde la plataforma del popup (mantiene permiso; se sigue midiendo). @param {import('../adapters/index.js').Adapter} adapter */
+async function hidePlatform(adapter) {
+  menuFor = null;
+  editing.delete(adapter.id);
+  await unpinPlatform(adapter.id);
+  await setPlatformHidden(adapter.id, true);
+  await render();
+}
+
+/** Quita la plataforma revocando su permiso de host. @param {import('../adapters/index.js').Adapter} adapter */
+async function removePlatform(adapter) {
+  menuFor = null;
+  editing.delete(adapter.id);
+  await unpinPlatform(adapter.id);
+  await setPlatformHidden(adapter.id, false);
+  await chrome.permissions.remove({ origins: [adapter.origin] });
+  await render();
+}
+
 /* ============ ADD / DRAG / HELPERS ============ */
+/** Fila de una plataforma oculta (con permiso), con botón "Mostrar". @param {import('../adapters/index.js').Adapter} adapter */
+function hiddenRow(adapter) {
+  const row = el('div', 'add-row');
+  const left = el('div', 'add-left');
+  const nameLine = el('div', 'name-line');
+  nameLine.append(el('span', 'name', adapter.name));
+  left.append(nameLine);
+  left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
+  row.append(left);
+  const btn = /** @type {HTMLButtonElement} */ (el('button', 'enable-btn', t('showPlatform')));
+  btn.addEventListener('click', async () => { await setPlatformHidden(adapter.id, false); await render(); });
+  row.append(btn);
+  return row;
+}
+
 /** @param {import('../adapters/index.js').Adapter} adapter */
 function addRow(adapter) {
   const row = el('div', 'add-row');
@@ -364,6 +460,8 @@ const ICONS = {
   pin: 'M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z',
   eye: 'M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z',
   'eye-off': 'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
+  sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4',
+  trash: 'M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',
 };
 /** @param {keyof typeof ICONS} name @param {string} title */
 function iconBtn(name, title) {
