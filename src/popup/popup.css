@@ -175,6 +175,18 @@ section { padding: 8px 16px; }
 .custom-link::before { content: "+"; font-size: 14px; line-height: 1; opacity: 0.8; }
 .custom-link:hover { text-decoration: underline; }
 
+/* enlace a Opciones: gestionar plataformas */
+#manage { padding: 0 14px 4px; }
+.manage-link {
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink-2);
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.manage-link::before { content: "\2699"; font-size: 14px; line-height: 1; flex: none; opacity: 0.85; }
+.manage-link:hover { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+
 footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding: 11px 16px 13px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
 footer a { color: var(--ink-3); text-decoration: none; transition: color 0.15s; }
 footer a:hover { color: var(--accent); }

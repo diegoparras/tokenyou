@@ -64,6 +64,29 @@ h1 { font-size: 20px; margin: 0; }
 .refresh-row .rp { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
 .refresh-row .rp i { width: 8px; height: 8px; border-radius: 50%; background: var(--pc, var(--accent)); }
 
+/* panel de plataformas */
+#platforms-list { display: flex; flex-direction: column; }
+.pf-row { display: flex; align-items: center; gap: 14px; padding: 11px 2px; border-top: 1px solid var(--line); }
+.pf-row:first-child { border-top: none; }
+.pf-id { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+.pf-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc, var(--accent)); flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 16%, transparent); }
+.pf-name { font-size: 14px; font-weight: 600; flex: none; }
+.pf-host { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-chip { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 20px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); flex: none; }
+.pf-controls { display: flex; align-items: center; gap: 12px; flex: none; }
+.pf-vis { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); cursor: pointer; user-select: none; }
+.pf-vis input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+.pf-row.hiddenp { opacity: 0.6; }
+.pf-row.hiddenp .pf-name { color: var(--ink-2); }
+.pf-btn { font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); flex: none; transition: color 0.15s, border-color 0.15s, background 0.15s; }
+.pf-btn.primary { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--accent); }
+.pf-btn.primary:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.pf-btn.danger:hover { border-color: color-mix(in srgb, var(--crit) 55%, var(--line)); color: var(--crit); background: color-mix(in srgb, var(--crit) 8%, var(--surface)); }
+@media (max-width: 520px) {
+  .pf-row { flex-wrap: wrap; gap: 8px; }
+  .pf-host { flex-basis: 100%; order: 3; }
+}
+
 .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
 .toolbar .spacer { flex: 1; }
 .btn {

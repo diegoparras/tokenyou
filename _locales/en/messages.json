@@ -40,9 +40,10 @@
   "menuChooseMeters": { "message": "Choose meters" },
   "menuDoneMeters": { "message": "Done with meters" },
   "menuHidePlatform": { "message": "Hide from popup" },
-  "menuRemovePlatform": { "message": "Remove platform" },
-  "hiddenTitle": { "message": "Hidden" },
-  "showPlatform": { "message": "Show" },
+  "manageLink": { "message": "Manage platforms" },
+  "platformsTitle": { "message": "Platforms" },
+  "platformsIntro": { "message": "Choose which platforms show in the popup. Hide the ones you don't use to keep it compact, or remove one to revoke its permission. Frequency is how often each one refreshes." },
+  "platformVisible": { "message": "Visible" },
   "collapseCard": { "message": "Collapse or expand" },
   "worstLabel": { "message": "Worst" },
   "historyOpen": { "message": "Usage history" },
@@ -79,6 +80,6 @@
   "optAuthFail": { "message": "endpoint requires a session — sign in to the site first" },
   "optParseFail": { "message": "response received but no meter paths matched — check the dot-paths" },
   "emptyTitle": { "message": "No platforms enabled yet" },
-  "emptyBody": { "message": "Enable a platform below. TokenYou will only be able to read that site's usage numbers — never your conversations." },
+  "emptyBody": { "message": "Open “Manage platforms” and enable the ones you use. TokenYou will only read that site's usage numbers — never your conversations." },
   "footerNote": { "message": "Local-only · zero telemetry · open source" }
 }

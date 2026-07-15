@@ -8,6 +8,7 @@ import {
 import { getNotifyPrefs, setNotifyPrefs } from '../lib/notify.js';
 import {
   getRefreshMinutes, refreshMinutesFor, setRefreshForPlatform, REFRESH_CHOICES,
+  getHiddenPlatforms, setPlatformHidden, unpinPlatform,
 } from '../lib/prefs.js';
 import { getAllAdapters } from '../adapters/index.js';
 
@@ -50,8 +51,8 @@ async function init() {
   setText('test-btn', t('optTest'));
   setText('save-btn', t('optSave'));
 
+  await initPlatforms();
   await initNotifications();
-  await initIconAndRefresh();
 
   const services = await getCustomServices();
   $editor.value = JSON.stringify(services, null, 2);
@@ -195,44 +196,103 @@ async function initNotifications() {
   $th.addEventListener('change', save);
 }
 
-/** Ícono (qué plataforma muestra el badge) + frecuencia de actualización por plataforma. */
-async function initIconAndRefresh() {
-  setText('prefs-title', t('prefsTitle'));
-  setText('refresh-intro', t('refreshIntro'));
+/**
+ * Panel central de plataformas: activar / mostrar-ocultar / frecuencia / quitar.
+ * Es el lugar único para elegir qué se ve en el popup (así el popup queda mínimo).
+ */
+async function initPlatforms() {
+  setText('platforms-title', t('platformsTitle'));
+  setText('platforms-intro', t('platformsIntro'));
+  await renderPlatforms();
+}
 
-  const [granted, adapters, refresh] = await Promise.all([
+async function renderPlatforms() {
+  const [granted, adapters, refresh, hiddenPlatforms] = await Promise.all([
     chrome.permissions.getAll(),
     getAllAdapters(),
     getRefreshMinutes(),
+    getHiddenPlatforms(),
   ]);
   const origins = granted.origins ?? [];
-  const enabled = adapters.filter((a) => origins.includes(a.origin));
-
-  // Frecuencia por plataforma.
-  const $list = /** @type {HTMLElement} */ (document.getElementById('refresh-list'));
+  const $list = /** @type {HTMLElement} */ (document.getElementById('platforms-list'));
   $list.replaceChildren(
-    ...enabled.map((a) => {
-      const row = document.createElement('div');
-      row.className = 'refresh-row';
-      const left = document.createElement('span');
-      left.className = 'rp';
-      const dot = document.createElement('i');
-      dot.style.setProperty('--pc', PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (a.id)] ?? '#7B8A96');
-      left.append(dot, document.createTextNode(a.name));
-      const sel = document.createElement('select');
-      sel.className = 'mini-sel';
-      for (const m of REFRESH_CHOICES) {
-        const o = document.createElement('option');
-        o.value = String(m);
-        o.textContent = t('minutes', String(m));
-        sel.append(o);
-      }
-      sel.value = String(refreshMinutesFor(refresh, a.id));
-      sel.addEventListener('change', () => void setRefreshForPlatform(a.id, Number(sel.value)));
-      row.append(left, sel);
-      return row;
-    })
+    ...adapters.map((a) => platformRow(a, origins.includes(a.origin), refresh, hiddenPlatforms)),
   );
+}
+
+/**
+ * @param {import('../adapters/index.js').Adapter} a
+ * @param {boolean} enabled permiso de host concedido
+ * @param {Record<string, number>} refresh
+ * @param {Set<string>} hiddenPlatforms
+ */
+function platformRow(a, enabled, refresh, hiddenPlatforms) {
+  const row = el('div', 'pf-row' + (enabled ? '' : ' off'));
+
+  const idw = el('span', 'pf-id');
+  const dot = el('i', 'pf-dot');
+  dot.style.setProperty('--pc', PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (a.id)] ?? '#7B8A96');
+  idw.append(dot, el('b', 'pf-name', a.name));
+  idw.append(el('span', 'pf-host', a.origin.replace(/^https:\/\/|\/\*$/g, '')));
+  if (a.custom) idw.append(el('span', 'pf-chip', t('customChip')));
+  row.append(idw);
+
+  const ctrl = el('span', 'pf-controls');
+  if (enabled) {
+    // Visible en el popup (mantiene el permiso; sigue midiendo para el historial).
+    const vis = el('label', 'pf-vis');
+    const cb = /** @type {HTMLInputElement} */ (document.createElement('input'));
+    cb.type = 'checkbox';
+    cb.checked = !hiddenPlatforms.has(a.id);
+    cb.addEventListener('change', async () => {
+      await setPlatformHidden(a.id, !cb.checked);
+      if (!cb.checked) await unpinPlatform(a.id);
+      row.classList.toggle('hiddenp', !cb.checked);
+    });
+    vis.append(cb, el('span', '', t('platformVisible')));
+    row.classList.toggle('hiddenp', hiddenPlatforms.has(a.id));
+
+    // Frecuencia de actualización.
+    const sel = /** @type {HTMLSelectElement} */ (document.createElement('select'));
+    sel.className = 'mini-sel';
+    sel.title = t('refreshIntro');
+    for (const m of REFRESH_CHOICES) {
+      const o = document.createElement('option');
+      o.value = String(m);
+      o.textContent = t('minutes', String(m));
+      sel.append(o);
+    }
+    sel.value = String(refreshMinutesFor(refresh, a.id));
+    sel.addEventListener('change', () => void setRefreshForPlatform(a.id, Number(sel.value)));
+
+    // Quitar (revoca el permiso de host).
+    const rm = /** @type {HTMLButtonElement} */ (el('button', 'pf-btn danger', t('remove')));
+    rm.addEventListener('click', async () => {
+      await unpinPlatform(a.id);
+      await setPlatformHidden(a.id, false);
+      await chrome.permissions.remove({ origins: [a.origin] });
+      await renderPlatforms();
+    });
+
+    ctrl.append(vis, sel, rm);
+  } else {
+    const en = /** @type {HTMLButtonElement} */ (el('button', 'pf-btn primary', t('enable')));
+    en.addEventListener('click', async () => {
+      const ok = await chrome.permissions.request({ origins: [a.origin] }).catch(() => false);
+      if (ok) await renderPlatforms();
+    });
+    ctrl.append(en);
+  }
+  row.append(ctrl);
+  return row;
+}
+
+/** @param {string} tag @param {string} className @param {string} [text] */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 /** @param {string} id @param {string} text */

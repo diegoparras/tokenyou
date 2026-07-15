@@ -23,14 +23,10 @@ const stateOf = (pct) => (pct >= 85 ? 'crit' : pct >= 60 ? 'warn' : 'ok');
 
 const $cards = /** @type {HTMLElement} */ (document.getElementById('cards'));
 const $empty = /** @type {HTMLElement} */ (document.getElementById('empty'));
-const $hidden = /** @type {HTMLElement} */ (document.getElementById('hidden'));
-const $hiddenList = /** @type {HTMLElement} */ (document.getElementById('hidden-list'));
-const $add = /** @type {HTMLElement} */ (document.getElementById('add'));
-const $addList = /** @type {HTMLElement} */ (document.getElementById('add-list'));
+const $manageLink = /** @type {HTMLButtonElement} */ (document.getElementById('manage-link'));
 const $ringGroup = /** @type {HTMLElement} */ (document.getElementById('ring-group'));
 const $refresh = /** @type {HTMLButtonElement} */ (document.getElementById('refresh'));
 const $history = /** @type {HTMLButtonElement} */ (document.getElementById('history'));
-const $customLink = /** @type {HTMLAnchorElement} */ (document.getElementById('custom-link'));
 
 /** Plataformas en modo "elegir medidores" (ojitos visibles). @type {Set<string>} */
 const editing = new Set();
@@ -44,13 +40,11 @@ init();
 async function init() {
   setText('empty-title', t('emptyTitle'));
   setText('empty-body', t('emptyBody'));
-  setText('add-title', t('addPlatform'));
-  setText('add-hint', t('addPlatformHint'));
   setText('footer-note', t('footerNote'));
   $refresh.title = t('refresh');
   $history.title = t('historyOpen');
-  $customLink.textContent = t('customLink');
-  $customLink.addEventListener('click', (e) => { e.preventDefault(); void chrome.runtime.openOptionsPage(); });
+  $manageLink.textContent = t('manageLink');
+  $manageLink.addEventListener('click', () => void chrome.runtime.openOptionsPage());
   $history.addEventListener('click', () => {
     const url = chrome.runtime.getURL('src/history/history.html');
     if (chrome.tabs?.create) chrome.tabs.create({ url });
@@ -86,12 +80,10 @@ async function render() {
   ]);
   const origins = granted.origins ?? [];
   const enabled = adapters.filter((a) => origins.includes(a.origin));
-  const disabled = adapters.filter((a) => !origins.includes(a.origin));
-  // Con permiso pero escondidas del popup vs. las que se muestran.
+  // El popup solo muestra las visibles; ocultar/activar/quitar se hace en Opciones.
   const visible = enabled.filter((a) => !hiddenPlatforms.has(a.id));
-  const hiddenEnabled = enabled.filter((a) => hiddenPlatforms.has(a.id));
 
-  const stored = await chrome.storage.local.get(enabled.map((a) => `snap.${a.id}`));
+  const stored = await chrome.storage.local.get(visible.map((a) => `snap.${a.id}`));
 
   // Series de historial (sparklines) de los medidores con % visibles.
   const seriesIds = [];
@@ -112,13 +104,6 @@ async function render() {
   });
   $cards.replaceChildren(...cards);
   $empty.hidden = enabled.length > 0;
-
-  $hidden.hidden = hiddenEnabled.length === 0;
-  setText('hidden-title', t('hiddenTitle'));
-  $hiddenList.replaceChildren(...hiddenEnabled.map(hiddenRow));
-
-  $add.hidden = disabled.length === 0;
-  $addList.replaceChildren(...disabled.map(addRow));
 
   renderRings(visible, stored, pins, hidden);
   firstPaint = false;
@@ -347,7 +332,6 @@ function menuPanel(adapter, canChooseMeters) {
     panel.append(menuItem('sliders', t(isEd ? 'menuDoneMeters' : 'menuChooseMeters'), false, () => chooseMeters(adapter, isEd)));
   }
   panel.append(menuItem('eye-off', t('menuHidePlatform'), false, () => hidePlatform(adapter)));
-  panel.append(menuItem('trash', t('menuRemovePlatform'), true, () => removePlatform(adapter)));
   return panel;
 }
 
@@ -382,52 +366,7 @@ async function hidePlatform(adapter) {
   await render();
 }
 
-/** Quita la plataforma revocando su permiso de host. @param {import('../adapters/index.js').Adapter} adapter */
-async function removePlatform(adapter) {
-  menuFor = null;
-  editing.delete(adapter.id);
-  await unpinPlatform(adapter.id);
-  await setPlatformHidden(adapter.id, false);
-  await chrome.permissions.remove({ origins: [adapter.origin] });
-  await render();
-}
-
-/* ============ ADD / DRAG / HELPERS ============ */
-/** Fila de una plataforma oculta (con permiso), con botón "Mostrar". @param {import('../adapters/index.js').Adapter} adapter */
-function hiddenRow(adapter) {
-  const row = el('div', 'add-row');
-  const left = el('div', 'add-left');
-  const nameLine = el('div', 'name-line');
-  nameLine.append(el('span', 'name', adapter.name));
-  left.append(nameLine);
-  left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
-  row.append(left);
-  const btn = /** @type {HTMLButtonElement} */ (el('button', 'enable-btn', t('showPlatform')));
-  btn.addEventListener('click', async () => { await setPlatformHidden(adapter.id, false); await render(); });
-  row.append(btn);
-  return row;
-}
-
-/** @param {import('../adapters/index.js').Adapter} adapter */
-function addRow(adapter) {
-  const row = el('div', 'add-row');
-  const left = el('div', 'add-left');
-  const nameLine = el('div', 'name-line');
-  nameLine.append(el('span', 'name', adapter.name));
-  nameLine.append(el('span', 'chip tier-endpoint', t('tierEndpoint')));
-  if (adapter.custom) nameLine.append(el('span', 'chip', t('customChip')));
-  left.append(nameLine);
-  left.append(el('span', 'host', adapter.origin.replace(/^https:\/\/|\/\*$/g, '')));
-  row.append(left);
-  const btn = /** @type {HTMLButtonElement} */ (el('button', 'enable-btn', t('enable')));
-  btn.addEventListener('click', async () => {
-    const ok = await chrome.permissions.request({ origins: [adapter.origin] });
-    if (ok) { await render(); await requestRefresh(); }
-  });
-  row.append(btn);
-  return row;
-}
-
+/* ============ DRAG / HELPERS ============ */
 /** @param {HTMLElement} art @param {string} pid */
 function wireDrag(art, pid) {
   art.addEventListener('dragstart', () => { dragId = pid; art.classList.add('drag'); });
@@ -461,7 +400,6 @@ const ICONS = {
   eye: 'M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z',
   'eye-off': 'M3 4l17 17-1.5 1.5-3-3A11.6 11.6 0 0 1 12 20c-5 0-9-4.5-10-7a13.7 13.7 0 0 1 4.2-5L1.5 5.5 3 4zm9 4a4 4 0 0 1 4 4l-5-5c.3-.06.6-.1 1-.1zM12 5c5 0 9 4.5 10 7a13.9 13.9 0 0 1-2.6 3.7l-2.9-2.9A4 4 0 0 0 12 8c-.4 0-.7 0-1 .1L8.6 5.6C9.7 5.2 10.8 5 12 5z',
   sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4',
-  trash: 'M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',
 };
 /** @param {keyof typeof ICONS} name @param {string} title */
 function iconBtn(name, title) {

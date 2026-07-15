@@ -9,6 +9,21 @@ const ORDER_KEY = 'prefs.order';
 
 export const MAX_PINS = 3;
 
+// Cadena para serializar las lecturas-modificaciones-escrituras sobre storage.
+let writeChain = /** @type {Promise<any>} */ (Promise.resolve());
+/**
+ * Serializa una operación de lectura-modificación-escritura sobre storage.
+ * Sin esto, dos toggles casi simultáneos (p. ej. ocultar varias plataformas
+ * seguidas) se pisan: ambos leen el mismo estado previo y la segunda escritura
+ * borra la primera. La cadena garantiza que corran una después de la otra.
+ * @template T @param {() => Promise<T>} fn @returns {Promise<T>}
+ */
+function serialize(fn) {
+  const run = writeChain.then(fn, fn);
+  writeChain = run.catch(() => {});
+  return run;
+}
+
 /**
  * Medidores fijados: claves `${platformId}/${meterId}`, en orden, máx 3.
  * El primero manda el badge del ícono; los tres alimentan los anillos del header.
@@ -21,24 +36,28 @@ export async function getPins() {
 }
 
 /** @param {string} key `${platformId}/${meterId}` @returns {Promise<string[]>} */
-export async function togglePin(key) {
-  const pins = await getPins();
-  const i = pins.indexOf(key);
-  if (i >= 0) pins.splice(i, 1);
-  else {
-    pins.push(key);
-    while (pins.length > MAX_PINS) pins.shift();
-  }
-  await chrome.storage.local.set({ [PINS_KEY]: pins });
-  return pins;
+export function togglePin(key) {
+  return serialize(async () => {
+    const pins = await getPins();
+    const i = pins.indexOf(key);
+    if (i >= 0) pins.splice(i, 1);
+    else {
+      pins.push(key);
+      while (pins.length > MAX_PINS) pins.shift();
+    }
+    await chrome.storage.local.set({ [PINS_KEY]: pins });
+    return pins;
+  });
 }
 
 /** Quita todos los pins de una plataforma (al ocultarla o quitarla). @param {string} platformId */
-export async function unpinPlatform(platformId) {
-  const pins = await getPins();
-  const next = pins.filter((k) => k.split('/')[0] !== platformId);
-  if (next.length !== pins.length) await chrome.storage.local.set({ [PINS_KEY]: next });
-  return next;
+export function unpinPlatform(platformId) {
+  return serialize(async () => {
+    const pins = await getPins();
+    const next = pins.filter((k) => k.split('/')[0] !== platformId);
+    if (next.length !== pins.length) await chrome.storage.local.set({ [PINS_KEY]: next });
+    return next;
+  });
 }
 
 /**
@@ -53,11 +72,13 @@ export async function getHiddenPlatforms() {
 }
 
 /** @param {string} platformId @param {boolean} hidden @returns {Promise<Set<string>>} */
-export async function setPlatformHidden(platformId, hidden) {
-  const set = await getHiddenPlatforms();
-  if (hidden) set.add(platformId); else set.delete(platformId);
-  await chrome.storage.local.set({ [HIDDEN_PLATFORMS_KEY]: [...set] });
-  return set;
+export function setPlatformHidden(platformId, hidden) {
+  return serialize(async () => {
+    const set = await getHiddenPlatforms();
+    if (hidden) set.add(platformId); else set.delete(platformId);
+    await chrome.storage.local.set({ [HIDDEN_PLATFORMS_KEY]: [...set] });
+    return set;
+  });
 }
 
 /** Plataformas colapsadas (una sola línea en el popup). @returns {Promise<Set<string>>} */
@@ -68,12 +89,14 @@ export async function getCollapsed() {
 }
 
 /** @param {string} platformId @returns {Promise<Set<string>>} */
-export async function toggleCollapsed(platformId) {
-  const set = await getCollapsed();
-  if (set.has(platformId)) set.delete(platformId);
-  else set.add(platformId);
-  await chrome.storage.local.set({ [COLLAPSED_KEY]: [...set] });
-  return set;
+export function toggleCollapsed(platformId) {
+  return serialize(async () => {
+    const set = await getCollapsed();
+    if (set.has(platformId)) set.delete(platformId);
+    else set.add(platformId);
+    await chrome.storage.local.set({ [COLLAPSED_KEY]: [...set] });
+    return set;
+  });
 }
 
 /** Orden manual de plataformas (ids). Las no listadas van al final en su orden natural. */
@@ -104,11 +127,13 @@ export function refreshMinutesFor(prefs, id) {
 }
 
 /** @param {string} id @param {number} minutes */
-export async function setRefreshForPlatform(id, minutes) {
-  const prefs = await getRefreshMinutes();
-  if (minutes === DEFAULT_REFRESH_MIN) delete prefs[id];
-  else prefs[id] = minutes;
-  await chrome.storage.local.set({ [REFRESH_KEY]: prefs });
+export function setRefreshForPlatform(id, minutes) {
+  return serialize(async () => {
+    const prefs = await getRefreshMinutes();
+    if (minutes === DEFAULT_REFRESH_MIN) delete prefs[id];
+    else prefs[id] = minutes;
+    await chrome.storage.local.set({ [REFRESH_KEY]: prefs });
+  });
 }
 
 /** @returns {Promise<Set<string>>} claves `${platformId}/${meterId}` ocultas */
@@ -122,10 +147,12 @@ export async function getHiddenMeters() {
  * @param {string} key `${platformId}/${meterId}`
  * @returns {Promise<Set<string>>} el set actualizado
  */
-export async function toggleHiddenMeter(key) {
-  const hidden = await getHiddenMeters();
-  if (hidden.has(key)) hidden.delete(key);
-  else hidden.add(key);
-  await chrome.storage.local.set({ [HIDDEN_KEY]: [...hidden] });
-  return hidden;
+export function toggleHiddenMeter(key) {
+  return serialize(async () => {
+    const hidden = await getHiddenMeters();
+    if (hidden.has(key)) hidden.delete(key);
+    else hidden.add(key);
+    await chrome.storage.local.set({ [HIDDEN_KEY]: [...hidden] });
+    return hidden;
+  });
 }

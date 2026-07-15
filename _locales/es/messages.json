@@ -40,9 +40,10 @@
   "menuChooseMeters": { "message": "Elegir medidores" },
   "menuDoneMeters": { "message": "Listo con los medidores" },
   "menuHidePlatform": { "message": "Ocultar del popup" },
-  "menuRemovePlatform": { "message": "Quitar plataforma" },
-  "hiddenTitle": { "message": "Ocultas" },
-  "showPlatform": { "message": "Mostrar" },
+  "manageLink": { "message": "Configurar plataformas" },
+  "platformsTitle": { "message": "Plataformas" },
+  "platformsIntro": { "message": "Elegí qué plataformas ver en el popup. Ocultá las que no uses para dejarlo compacto, o quitá una para revocar su permiso. La frecuencia es cada cuánto se actualiza cada una." },
+  "platformVisible": { "message": "Visible" },
   "collapseCard": { "message": "Colapsar o expandir" },
   "worstLabel": { "message": "Peor" },
   "historyOpen": { "message": "Historial de uso" },
@@ -79,6 +80,6 @@
   "optAuthFail": { "message": "el endpoint requiere sesión — iniciá sesión en el sitio primero" },
   "optParseFail": { "message": "hubo respuesta pero ninguna ruta de medidor coincidió — revisá las rutas de puntos" },
   "emptyTitle": { "message": "Todavía no activaste plataformas" },
-  "emptyBody": { "message": "Activá una plataforma abajo. TokenYou solo podrá leer los números de uso de ese sitio — nunca tus conversaciones." },
+  "emptyBody": { "message": "Entrá en «Configurar plataformas» y activá las que uses. TokenYou solo leerá los números de uso de ese sitio — nunca tus conversaciones." },
   "footerNote": { "message": "Solo local · cero telemetría · open source" }
 }
