@@ -16,6 +16,7 @@
   "meterWeekModel": { "message": "Week · $MODEL$", "placeholders": { "model": { "content": "$1" } } },
   "meterWindowHours": { "message": "$HOURS$ h window", "placeholders": { "hours": { "content": "$1" } } },
   "meterWeek": { "message": "Weekly" },
+  "meterMonth": { "message": "Monthly" },
   "meterProSearches": { "message": "Pro searches" },
   "meterResearch": { "message": "Research" },
   "meterLabs": { "message": "Labs" },

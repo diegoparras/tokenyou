@@ -6,9 +6,11 @@ const t = (/** @type {string} */ key, /** @type {string|undefined} */ arg = unde
   chrome.i18n.getMessage(key, arg ? [arg] : undefined) || key;
 
 /**
- * Forma verificada de /backend-api/wham/usage (2026-07): requiere bearer token
+ * Forma verificada de /backend-api/wham/usage (2026-08): requiere bearer token
  * obtenido de /api/auth/session (el mismo flujo que usa el front de chatgpt.com).
  * rate_limit.primary_window / secondary_window: {used_percent, limit_window_seconds, reset_at (epoch s)}.
+ * En cuentas free la ventana primaria es MENSUAL (limit_window_seconds ≈ 2.592.000 = 30 días)
+ * y secondary_window viene en null. En Plus son 5 h (primaria) + semanal (secundaria).
  */
 export const chatgpt = {
   id: 'chatgpt',
@@ -35,9 +37,11 @@ export const chatgpt = {
       if (typeof win?.used_percent !== 'number') continue;
       const seconds = win.limit_window_seconds;
       const label =
-        Number.isFinite(seconds) && seconds >= 6 * 24 * 3600
-          ? t('meterWeek')
-          : t('meterWindowHours', String(Math.round((seconds ?? 18000) / 3600)));
+        Number.isFinite(seconds) && seconds >= 26 * 24 * 3600
+          ? t('meterMonth')
+          : Number.isFinite(seconds) && seconds >= 6 * 24 * 3600
+            ? t('meterWeek')
+            : t('meterWindowHours', String(Math.round((seconds ?? 18000) / 3600)));
       meters.push({
         id: String(id),
         label,
