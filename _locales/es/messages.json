@@ -9,6 +9,8 @@
   "updatedAgo": { "message": "actualizado hace $TIME$", "placeholders": { "time": { "content": "$1" } } },
   "justNow": { "message": "actualizado recién" },
   "resetsIn": { "message": "reinicia en $TIME$", "placeholders": { "time": { "content": "$1" } } },
+  "forecastRunsOut": { "message": "se agota en $TIME$", "placeholders": { "time": { "content": "$1" } } },
+  "forecastReaches": { "message": "llegás al $PCT$%", "placeholders": { "pct": { "content": "$1" } } },
   "loggedOut": { "message": "Iniciá sesión en $PLATFORM$ en este navegador para ver tu uso.", "placeholders": { "platform": { "content": "$1" } } },
   "fetchError": { "message": "No se pudo leer el uso. Puede que la plataforma haya cambiado su API." },
   "meterSession": { "message": "Sesión (5 h)" },

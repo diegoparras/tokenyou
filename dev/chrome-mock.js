@@ -131,27 +131,38 @@
     }
   }
 
-  // Series sintéticas de historial para ver los sparklines en el preview.
-  const mkSeries = (base, up, resetAt) => {
-    let v = base; const out = [];
-    for (let i = 0; i < 30; i++) {
-      v += up * (0.5 + ((i * 7) % 5) / 4);
-      if (resetAt && i === resetAt) v = base * 0.3;
-      v = Math.max(2, Math.min(100, v));
-      out.push({ t: now - (30 - i) * 30 * 60000, v: Math.round(v) });
+  // Series sintéticas de historial: alimentan los sparklines y la proyección.
+  // Terminan en el mismo % que el snapshot (como hace recordSnapshot en producción);
+  // si terminaran en otro valor, forecast.js leería la diferencia como un reset.
+  // 30 puntos cada 30 min = 15 h de historial.
+  const mkSeries = (end, resetAt) => {
+    const n = 30;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      let v;
+      if (resetAt != null && i < resetAt) {
+        v = 55 + (i / resetAt) * 35;            // ventana anterior, ya avanzada
+      } else {
+        const from = resetAt != null ? resetAt : 0;
+        const span = n - 1 - from;
+        const p = span > 0 ? (i - from) / span : 1;
+        v = end * 0.3 + end * 0.7 * p;          // rampa hasta el valor actual
+      }
+      v += (((i * 7) % 5) - 2) * 0.3;           // ruido leve
+      out.push({ t: now - (n - i) * 30 * 60000, v: Math.max(0, Math.min(100, Math.round(v))) });
     }
     return out;
   };
-  store['hist.pts.claude/session'] = mkSeries(8, 1.1, 16);
-  store['hist.pts.claude/weekly_all'] = mkSeries(20, 1.0);
-  store['hist.pts.claude/weekly_scoped'] = mkSeries(24, 1.2);
-  store['hist.pts.claude/extra_usage'] = mkSeries(10, 0.5);
-  store['hist.pts.chatgpt/primary'] = mkSeries(5, 0.4, 22);
-  store['hist.pts.chatgpt/secondary'] = mkSeries(1, 0.1);
-  store['hist.pts.gemini/session'] = mkSeries(1, 0.05);
-  store['hist.pts.gemini/weekly'] = mkSeries(1, 0.1);
-  store['hist.pts.grok/default'] = mkSeries(40, 2.0);
-  store['hist.pts.custom-cursor/premium'] = mkSeries(20, 1.5);
+  store['hist.pts.claude/session'] = mkSeries(33);
+  store['hist.pts.claude/weekly_all'] = mkSeries(32);
+  store['hist.pts.claude/weekly_scoped'] = mkSeries(64);
+  store['hist.pts.claude/extra_usage'] = mkSeries(22);
+  store['hist.pts.chatgpt/primary'] = mkSeries(11);
+  store['hist.pts.chatgpt/secondary'] = mkSeries(2);
+  store['hist.pts.gemini/session'] = mkSeries(0);
+  store['hist.pts.gemini/weekly'] = mkSeries(1);
+  store['hist.pts.grok/default'] = mkSeries(90);
+  store['hist.pts.custom-cursor/premium'] = mkSeries(46);
 
   // Buckets de actividad sintéticos (para la vista de historial / heatmap).
   const mkActivity = (seed) => {

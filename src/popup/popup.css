@@ -130,8 +130,21 @@ main { display: flex; flex-direction: column; padding: 14px; gap: 14px; }
 .track::before, .track::after { content: ""; position: absolute; top: 1px; bottom: 1px; width: 1px; background: var(--bg); opacity: 0.55; z-index: 1; }
 .track::before { left: 60%; } .track::after { left: 85%; }
 .fill { height: 100%; border-radius: 4px; background-image: linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,0)); transition: width 0.65s cubic-bezier(0.22,1,0.36,1), background-color 0.3s; }
-@media (prefers-reduced-motion: reduce) { .fill { transition: background-color 0.3s; } }
+@media (prefers-reduced-motion: reduce) { .fill, .ghost { transition: none; } }
+
+/* Tramo proyectado: a dónde llegás cuando la ventana reinicie, al ritmo actual.
+   Toma el color de su propia barra (--gc), translúcido: no suma un color nuevo. */
+.ghost {
+  position: absolute; top: 0; bottom: 0;
+  background: color-mix(in srgb, var(--gc, var(--sc, var(--ink-3))) 26%, transparent);
+  transition: left 0.5s cubic-bezier(0.22,1,0.36,1), width 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+.ghost::after {
+  content: ""; position: absolute; right: 0; top: 0; bottom: 0;
+  width: 1.5px; background: var(--gc, var(--sc, var(--ink-3))); opacity: 0.9;
+}
 .m-reset { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 4px; letter-spacing: -0.01em; }
+.m-reset .fc { color: var(--ink-2); }
 
 /* estados de color (fondo para barras, texto para valores) */
 .st-ok { background-color: var(--ok); } .st-warn { background-color: var(--warn); } .st-crit { background-color: var(--crit); }

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>TokenYou — propuesta: predicción</title>
+  <link rel="stylesheet" href="/src/popup/popup.css">
+  <style>
+    /* El popup.css fija body{width:380px}: lo soltamos para comparar en columnas. */
+    html, body { width: auto !important; margin: 0; background: var(--bg); }
+    .wrap { display: flex; gap: 26px; padding: 22px 24px 26px; align-items: flex-start; }
+    .col { width: 380px; flex: none; }
+    .col > h3 {
+      font: 700 12px/1.3 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+      color: var(--accent); margin: 0 0 3px; padding: 0 2px;
+    }
+    .col > p { font: 11.5px/1.45 var(--sans); color: var(--ink-3); margin: 0 0 11px; padding: 0 2px; min-height: 34px; }
+    main { padding: 0; gap: 0; }
+
+    /* ---- LO NUEVO: tramo proyectado dentro de la barra que ya existe ---- */
+    .ghost {
+      position: absolute; top: 0; bottom: 0;
+      background: var(--sc); opacity: .26;
+    }
+    .ghost::after {
+      content: ""; position: absolute; right: 0; top: 0; bottom: 0;
+      width: 1.5px; background: var(--sc); opacity: .95;
+    }
+    /* aviso en la línea de reset */
+    .m-reset .fc { color: var(--ink-2); }
+    /* variante C: chip de proyección al lado del valor */
+    .m-proj {
+      font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--ink-3);
+      background: var(--surface-2); border-radius: 20px; padding: 1.5px 6px; flex: none;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══════════ A ══════════ -->
+  <div class="col">
+    <h3>A · Solo texto</h3>
+    <p>Lo mínimo. Se cuelga de la línea de reset. Cero píxeles extra, cero color nuevo.</p>
+    <main>
+      <article class="card state-warn open pinned" style="--pc:#D97757">
+        <div class="chead">
+          <button class="icon-btn small menu-btn"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 12 5zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4z"/></svg></button>
+          <span class="pdot"></span><span class="pname">Claude</span><span class="chip">Max 20x</span>
+          <span class="spacer"></span>
+          <button class="icon-btn small chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+        <div class="cbody">
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin on"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Sesión (5 h)</span>
+              <span class="spark sp-ok"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 12.5 L12.5 11.4 L25 10.6 L37.5 9.6 L50 9 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 12.5 L12.5 11.4 L25 10.6 L37.5 9.6 L50 9" fill="none"/><circle class="sp-dot" cx="50" cy="9" r="1.6"/></svg></span>
+              <span class="m-val">33%</span>
+            </div>
+            <div class="track"><div class="fill st-ok" style="width:33%"></div></div>
+            <div class="m-reset">reinicia en 2 h 05 m <span class="fc">· te alcanza</span></div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · Fable</span>
+              <span class="spark sp-warn"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 11 L12.5 9.2 L25 7.4 L37.5 5.6 L50 4 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 11 L12.5 9.2 L25 7.4 L37.5 5.6 L50 4" fill="none"/><circle class="sp-dot" cx="50" cy="4" r="1.6"/></svg></span>
+              <span class="m-val">64%</span>
+            </div>
+            <div class="track"><div class="fill st-warn" style="width:64%"></div></div>
+            <div class="m-reset">reinicia en 3 d 0 h <span class="fc">· se agota en 1 d 4 h</span></div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · todos los modelos</span>
+              <span class="spark sp-ok"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 12 L12.5 11.2 L25 10.4 L37.5 9.8 L50 9.2 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 12 L12.5 11.2 L25 10.4 L37.5 9.8 L50 9.2" fill="none"/><circle class="sp-dot" cx="50" cy="9.2" r="1.6"/></svg></span>
+              <span class="m-val">32%</span>
+            </div>
+            <div class="track"><div class="fill st-ok" style="width:32%"></div></div>
+            <div class="m-reset">reinicia en 3 d 0 h</div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <!-- ══════════ B ══════════ -->
+  <div class="col">
+    <h3>B · Barra fantasma + texto</h3>
+    <p>El tramo translúcido muestra a dónde llegás al momento del reset, con una marca al final. Mismo color de estado.</p>
+    <main>
+      <article class="card state-warn open pinned" style="--pc:#D97757">
+        <div class="chead">
+          <button class="icon-btn small menu-btn"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 12 5zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4z"/></svg></button>
+          <span class="pdot"></span><span class="pname">Claude</span><span class="chip">Max 20x</span>
+          <span class="spacer"></span>
+          <button class="icon-btn small chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+        <div class="cbody">
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin on"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Sesión (5 h)</span>
+              <span class="spark sp-ok"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 12.5 L12.5 11.4 L25 10.6 L37.5 9.6 L50 9 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 12.5 L12.5 11.4 L25 10.6 L37.5 9.6 L50 9" fill="none"/><circle class="sp-dot" cx="50" cy="9" r="1.6"/></svg></span>
+              <span class="m-val">33%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-ok" style="width:33%"></div>
+              <div class="ghost" style="left:33%; width:25%"></div>
+            </div>
+            <div class="m-reset">reinicia en 2 h 05 m <span class="fc">· te alcanza</span></div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · Fable</span>
+              <span class="spark sp-warn"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 11 L12.5 9.2 L25 7.4 L37.5 5.6 L50 4 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 11 L12.5 9.2 L25 7.4 L37.5 5.6 L50 4" fill="none"/><circle class="sp-dot" cx="50" cy="4" r="1.6"/></svg></span>
+              <span class="m-val">64%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-warn" style="width:64%"></div>
+              <div class="ghost" style="left:64%; width:36%"></div>
+            </div>
+            <div class="m-reset">reinicia en 3 d 0 h <span class="fc">· se agota en 1 d 4 h</span></div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · todos los modelos</span>
+              <span class="spark sp-ok"><svg width="50" height="15" viewBox="0 0 50 15"><path class="sp-area" d="M0 12 L12.5 11.2 L25 10.4 L37.5 9.8 L50 9.2 L 50 15 L 0 15 Z"/><path class="sp-line" d="M0 12 L12.5 11.2 L25 10.4 L37.5 9.8 L50 9.2" fill="none"/><circle class="sp-dot" cx="50" cy="9.2" r="1.6"/></svg></span>
+              <span class="m-val">32%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-ok" style="width:32%"></div>
+              <div class="ghost" style="left:32%; width:15%"></div>
+            </div>
+            <div class="m-reset">reinicia en 3 d 0 h</div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <!-- ══════════ C ══════════ -->
+  <div class="col">
+    <h3>C · Fantasma + chip</h3>
+    <p>Suma un chip con el porcentaje proyectado al lado del valor. Más dato, pero compite con el sparkline.</p>
+    <main>
+      <article class="card state-warn open pinned" style="--pc:#D97757">
+        <div class="chead">
+          <button class="icon-btn small menu-btn"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 12 5zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zm0 5.3a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4z"/></svg></button>
+          <span class="pdot"></span><span class="pname">Claude</span><span class="chip">Max 20x</span>
+          <span class="spacer"></span>
+          <button class="icon-btn small chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+        <div class="cbody">
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin on"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Sesión (5 h)</span>
+              <span class="m-proj">→58%</span>
+              <span class="m-val">33%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-ok" style="width:33%"></div>
+              <div class="ghost" style="left:33%; width:25%"></div>
+            </div>
+            <div class="m-reset">reinicia en 2 h 05 m</div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · Fable</span>
+              <span class="m-proj">→100%</span>
+              <span class="m-val">64%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-warn" style="width:64%"></div>
+              <div class="ghost" style="left:64%; width:36%"></div>
+            </div>
+            <div class="m-reset">reinicia en 3 d 0 h <span class="fc">· se agota en 1 d 4 h</span></div>
+          </div>
+          <div class="meter">
+            <div class="m-row">
+              <button class="icon-btn small lead-btn pin"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg></button>
+              <span class="m-label">Semana · todos</span>
+              <span class="m-proj">→47%</span>
+              <span class="m-val">32%</span>
+            </div>
+            <div class="track">
+              <div class="fill st-ok" style="width:32%"></div>
+              <div class="ghost" style="left:32%; width:15%"></div>
+            </div>
+            <div class="m-reset">reinicia en 3 d 0 h</div>
+          </div>
+        </div>
+      </article>
+    </main>
+  </div>
+
+</div>
+</body>
+</html>

@@ -2,9 +2,11 @@
   "name": "tokenyou",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Dev tooling only — the extension itself has zero dependencies and no build step.",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test",
     "pack": "git archive --format=zip -o dist/tokenyou.zip HEAD manifest.json src icons _locales LICENSE"
   },
   "devDependencies": {

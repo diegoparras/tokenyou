@@ -7,6 +7,7 @@ import {
   getPins, togglePin, getCollapsed, toggleCollapsed, getOrder, setOrder, MAX_PINS,
 } from '../lib/prefs.js';
 import { getSeries } from '../lib/history.js';
+import { forecast } from '../lib/forecast.js';
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
   chrome.i18n.getMessage(key, args) || key;
@@ -20,6 +21,8 @@ const pcolor = (/** @type {string} */ id) =>
   PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (id)] ?? '#7B8A96';
 /** @param {number} pct */
 const stateOf = (pct) => (pct >= 85 ? 'crit' : pct >= 60 ? 'warn' : 'ok');
+/** Umbral a partir del cual la proyección se dice con palabras, no solo con la barra. */
+const FORECAST_WARN_PCT = 85;
 
 const $cards = /** @type {HTMLElement} */ (document.getElementById('cards'));
 const $empty = /** @type {HTMLElement} */ (document.getElementById('empty'));
@@ -269,6 +272,11 @@ function card(adapter, snap, ctx) {
  * @param {{t:number,v:number}[]} [points]
  */
 function meterEl(pid, m, opts, points) {
+  const now = Date.now();
+  // Proyección "a este ritmo": devuelve null cuando no hay base para afirmar nada.
+  const fc = typeof m.usedPct === 'number' && points
+    ? forecast(points, { usedPct: m.usedPct, resetsAt: m.resetsAt, now })
+    : null;
   const box = el('div', 'meter' + (opts.isHidden ? ' meter-hidden' : ''));
   const row = el('div', 'm-row');
 
@@ -309,13 +317,43 @@ function meterEl(pid, m, opts, points) {
     if (firstPaint) { fill.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = target; })); }
     else fill.style.width = target;
     track.append(fill);
+
+    // Tramo proyectado: desde el consumo real hasta donde llegás al reinicio.
+    // Mismo color de estado, translúcido: informa sin sumar un color más.
+    if (fc) {
+      const from = Math.min(100, m.usedPct);
+      const to = Math.min(100, fc.projectedPct);
+      if (to - from > 0.5) {
+        const ghost = el('div', 'ghost');
+        // El fantasma sigue el color de SU barra, no el de la card: así cada
+        // medidor queda monocromático (sólido = usado, translúcido = proyectado).
+        ghost.style.setProperty('--gc', `var(--${stateOf(m.usedPct)})`);
+        ghost.style.left = `${from}%`;
+        ghost.style.width = `${to - from}%`;
+        track.append(ghost);
+      }
+    }
     box.append(track);
   }
 
   const notes = [];
   if (m.detail) notes.push(m.detail);
-  if (m.resetsAt && m.resetsAt > Date.now()) notes.push(t('resetsIn', [durationLabel(m.resetsAt - Date.now())]));
-  if (notes.length) box.append(el('div', 'm-reset', notes.join(' · ')));
+  if (m.resetsAt && m.resetsAt > now) notes.push(t('resetsIn', [durationLabel(m.resetsAt - now)]));
+
+  // La proyección se pone en palabras solo cuando aprieta; si vas bien, la
+  // barra ya lo cuenta y la línea queda tan limpia como antes.
+  const warning = fc && fc.projectedPct >= FORECAST_WARN_PCT
+    ? (fc.exhaustsAt !== null
+        ? t('forecastRunsOut', [durationLabel(Math.max(0, fc.exhaustsAt - now))])
+        : t('forecastReaches', [String(fc.projectedPct)]))
+    : null;
+
+  if (notes.length || warning) {
+    const line = el('div', 'm-reset');
+    if (notes.length) line.append(document.createTextNode(notes.join(' · ')));
+    if (warning) line.append(el('span', 'fc', notes.length ? ` · ${warning}` : warning));
+    box.append(line);
+  }
   return box;
 }
 

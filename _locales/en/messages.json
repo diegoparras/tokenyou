@@ -9,6 +9,8 @@
   "updatedAgo": { "message": "updated $TIME$ ago", "placeholders": { "time": { "content": "$1" } } },
   "justNow": { "message": "updated just now" },
   "resetsIn": { "message": "resets in $TIME$", "placeholders": { "time": { "content": "$1" } } },
+  "forecastRunsOut": { "message": "runs out in $TIME$", "placeholders": { "time": { "content": "$1" } } },
+  "forecastReaches": { "message": "reaches $PCT$%", "placeholders": { "pct": { "content": "$1" } } },
   "loggedOut": { "message": "Sign in to $PLATFORM$ in this browser to see your usage.", "placeholders": { "platform": { "content": "$1" } } },
   "fetchError": { "message": "Couldn't read usage. The platform may have changed its API." },
   "meterSession": { "message": "Session (5 h)" },
