@@ -5,7 +5,7 @@ const t = (/** @type {string} */ key, /** @type {string|undefined} */ arg = unde
   chrome.i18n.getMessage(key, arg ? [arg] : undefined) || key;
 
 /**
- * Forma verificada de /api/organizations/{org}/usage (2026-07):
+ * Forma verificada de /api/organizations/{org}/usage (2026-10):
  * preferimos el array normalizado `limits[]` ({kind, percent, resets_at, scope})
  * y caemos a los objetos legacy five_hour/seven_day si desaparece.
  */
@@ -25,55 +25,80 @@ export const claude = {
 
     const usage = await fetchJSON(`https://claude.ai/api/organizations/${org.uuid}/usage`);
 
-    /** @type {import('../lib/quota.js').Meter[]} */
-    const meters = [];
-    if (Array.isArray(usage?.limits) && usage.limits.length) {
-      for (const lim of usage.limits) {
-        if (typeof lim?.percent !== 'number') continue;
-        meters.push({
-          id: String(lim.kind ?? lim.group ?? meters.length),
-          label: labelForKind(lim),
-          usedPct: Math.round(lim.percent),
-          resetsAt: lim.resets_at ? Date.parse(lim.resets_at) : null,
-        });
-      }
-    } else {
-      for (const [key, labelKey] of [
-        ['five_hour', 'meterSession'],
-        ['seven_day', 'meterWeekAll'],
-        ['seven_day_opus', 'meterWeekModel'],
-      ]) {
-        const w = usage?.[key];
-        if (typeof w?.utilization !== 'number') continue;
-        meters.push({
-          id: key,
-          label: labelKey === 'meterWeekModel' ? t(labelKey, 'Opus') : t(labelKey),
-          usedPct: Math.round(w.utilization),
-          resetsAt: w.resets_at ? Date.parse(w.resets_at) : null,
-        });
-      }
-    }
-    const extra = usage?.extra_usage;
-    if (extra?.is_enabled && typeof extra.utilization === 'number') {
-      meters.push({
-        id: 'extra_usage',
-        label: t('meterExtraUsage'),
-        usedPct: Math.round(extra.utilization),
-        resetsAt: null,
-        detail: moneyDetail(extra),
-      });
-    }
-    if (!meters.length) throw Object.assign(new Error('no meters'), { name: 'ParseError' });
-
     return {
       platformId: 'claude',
       ok: true,
       plan: planFromTier(org.rate_limit_tier),
-      meters,
+      meters: parseUsage(usage),
       fetchedAt: Date.now(),
     };
   },
 };
+
+/**
+ * Convierte la respuesta de /usage en medidores. Pura a propósito: se testea
+ * contra payloads reales, que es donde esta plataforma cambia sin avisar.
+ *
+ * Lanza `UnsupportedPlanError` cuando la respuesta tiene la forma esperada pero
+ * no trae ningún límite — el plan gratuito responde 200 con todo en null y
+ * `limits: []`. Eso no es un fallo nuestro y no debe reportarse como tal.
+ *
+ * @param {any} usage
+ * @returns {import('../lib/quota.js').Meter[]}
+ */
+export function parseUsage(usage) {
+  /** @type {import('../lib/quota.js').Meter[]} */
+  const meters = [];
+
+  if (Array.isArray(usage?.limits) && usage.limits.length) {
+    for (const lim of usage.limits) {
+      if (typeof lim?.percent !== 'number') continue;
+      meters.push({
+        id: String(lim.kind ?? lim.group ?? meters.length),
+        label: labelForKind(lim),
+        usedPct: Math.round(lim.percent),
+        resetsAt: lim.resets_at ? Date.parse(lim.resets_at) : null,
+      });
+    }
+  } else {
+    for (const [key, labelKey] of [
+      ['five_hour', 'meterSession'],
+      ['seven_day', 'meterWeekAll'],
+      ['seven_day_opus', 'meterWeekModel'],
+    ]) {
+      const w = usage?.[key];
+      if (typeof w?.utilization !== 'number') continue;
+      meters.push({
+        id: key,
+        label: labelKey === 'meterWeekModel' ? t(labelKey, 'Opus') : t(labelKey),
+        usedPct: Math.round(w.utilization),
+        resetsAt: w.resets_at ? Date.parse(w.resets_at) : null,
+      });
+    }
+  }
+
+  const extra = usage?.extra_usage;
+  if (extra?.is_enabled && typeof extra.utilization === 'number') {
+    meters.push({
+      id: 'extra_usage',
+      label: t('meterExtraUsage'),
+      usedPct: Math.round(extra.utilization),
+      resetsAt: null,
+      detail: moneyDetail(extra),
+    });
+  }
+
+  if (!meters.length) {
+    // Distinguimos "tu plan no publica la cuota" de "no entiendo la respuesta".
+    // Si vienen las claves conocidas, la API está bien: lo que no hay es dato.
+    const shaped = !!usage && typeof usage === 'object'
+      && ('limits' in usage || 'five_hour' in usage);
+    throw shaped
+      ? Object.assign(new Error('plan does not publish usage'), { name: 'UnsupportedPlanError' })
+      : Object.assign(new Error('no meters'), { name: 'ParseError' });
+  }
+  return meters;
+}
 
 /** @param {{kind?: string, scope?: {model?: {display_name?: string}}}} lim */
 function labelForKind(lim) {

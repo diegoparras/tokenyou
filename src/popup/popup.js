@@ -250,7 +250,10 @@ function card(adapter, snap, ctx) {
   // ---- cuerpo ----
   if (!snap) { art.append(el('p', 'notice', '…')); return art; }
   if (!snap.ok) {
-    art.append(el('p', 'notice', snap.error === 'auth' ? t('loggedOut', [adapter.name]) : t('fetchError')));
+    const notice = snap.error === 'auth' ? t('loggedOut', [adapter.name])
+      : snap.error === 'unsupported' ? t('planNoUsage', [adapter.name])
+        : t('fetchError');
+    art.append(el('p', 'notice', notice));
     return art;
   }
   const body = el('div', 'cbody');

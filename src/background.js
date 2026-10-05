@@ -100,6 +100,7 @@ async function refreshOne(adapter) {
       platformId: adapter.id,
       ok: false,
       error: name === 'AuthError' ? 'auth'
+        : name === 'UnsupportedPlanError' ? 'unsupported'
         : name === 'HttpError' ? 'http'
         : name === 'ParseError' ? 'parse'
         : 'network',

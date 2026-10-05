@@ -13,6 +13,7 @@
   "forecastReaches": { "message": "llegás al $PCT$%", "placeholders": { "pct": { "content": "$1" } } },
   "loggedOut": { "message": "Iniciá sesión en $PLATFORM$ en este navegador para ver tu uso.", "placeholders": { "platform": { "content": "$1" } } },
   "fetchError": { "message": "No se pudo leer el uso. Puede que la plataforma haya cambiado su API." },
+  "planNoUsage": { "message": "Tu plan de $PLATFORM$ no publica datos de uso.", "placeholders": { "platform": { "content": "$1" } } },
   "meterSession": { "message": "Sesión (5 h)" },
   "meterWeekAll": { "message": "Semana · todos los modelos" },
   "meterWeekModel": { "message": "Semana · $MODEL$", "placeholders": { "model": { "content": "$1" } } },

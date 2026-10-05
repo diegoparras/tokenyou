@@ -16,7 +16,7 @@
  * @typedef {Object} Snapshot
  * @property {string} platformId
  * @property {boolean} ok
- * @property {'auth'|'http'|'network'|'parse'} [error]
+ * @property {'auth'|'http'|'network'|'parse'|'unsupported'} [error]
  * @property {boolean} [approx]     true si los valores son conteo local, no dato de la plataforma.
  * @property {string} [plan]        Nombre legible del plan, si la plataforma lo expone.
  * @property {string} [account]     Cuenta activa (p. ej. email), para distinguir entre varias sesiones.

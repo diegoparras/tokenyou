@@ -13,6 +13,7 @@
   "forecastReaches": { "message": "reaches $PCT$%", "placeholders": { "pct": { "content": "$1" } } },
   "loggedOut": { "message": "Sign in to $PLATFORM$ in this browser to see your usage.", "placeholders": { "platform": { "content": "$1" } } },
   "fetchError": { "message": "Couldn't read usage. The platform may have changed its API." },
+  "planNoUsage": { "message": "Your $PLATFORM$ plan doesn't publish usage data.", "placeholders": { "platform": { "content": "$1" } } },
   "meterSession": { "message": "Session (5 h)" },
   "meterWeekAll": { "message": "Week · all models" },
   "meterWeekModel": { "message": "Week · $MODEL$", "placeholders": { "model": { "content": "$1" } } },
