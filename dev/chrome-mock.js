@@ -16,7 +16,6 @@
     'Uso extra (mes)': 'Extra usage (month)',
     'US$ 21,84 · quedan US$ 78,16': 'US$ 21.84 · US$ 78.16 left',
     'Ventana de 5 h': '5 h window',
-    'Ventana de 4 h': '4 h window',
     'Semanal': 'Weekly',
     'Solicitudes premium': 'Premium requests',
     'Puntos de cómputo': 'Compute points',
@@ -64,7 +63,7 @@
       platformId: 'grok',
       ok: true,
       meters: [
-        { id: 'default', label: 'Ventana de 4 h', usedPct: 90, resetsAt: null, remaining: 1, total: 10 },
+        { id: 'weekly', label: 'Semanal', usedPct: 90, resetsAt: now + 3 * 24 * H },
       ],
       fetchedAt: now - 40 * 1000,
     },
@@ -114,7 +113,7 @@
     },
     'prefs.hiddenMeters': [],
     'prefs.notify': { reset: true, threshold: 85 },
-    'prefs.pins': ['claude/session', 'chatgpt/primary', 'grok/default'],
+    'prefs.pins': ['claude/session', 'chatgpt/primary', 'grok/weekly'],
     'prefs.collapsed': ['gemini', 'grok', 'perplexity', 'custom-cursor', 'abacus'],
     'prefs.order': [],
   };
@@ -161,7 +160,7 @@
   store['hist.pts.chatgpt/secondary'] = mkSeries(2);
   store['hist.pts.gemini/session'] = mkSeries(0);
   store['hist.pts.gemini/weekly'] = mkSeries(1);
-  store['hist.pts.grok/default'] = mkSeries(90);
+  store['hist.pts.grok/weekly'] = mkSeries(90);
   store['hist.pts.custom-cursor/premium'] = mkSeries(46);
 
   // Buckets de actividad sintéticos (para la vista de historial / heatmap).
@@ -185,7 +184,7 @@
   store['hist.act.claude/session'] = mkActivity(2);
   store['hist.act.claude/weekly_scoped'] = mkActivity(3);
   store['hist.act.chatgpt/primary'] = mkActivity(4);
-  store['hist.act.grok/default'] = mkActivity(5);
+  store['hist.act.grok/weekly'] = mkActivity(5);
 
   const changeListeners = [];
   const grantedOrigins = [
