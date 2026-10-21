@@ -9,8 +9,10 @@ const CREDITS_URL = 'https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCredit
 /**
  * Grok dejó de gobernarse por el viejo contador de consultas por ventana
  * (POST /rest/rate-limits, que además responde 404 si se le pasa modelName).
- * Desde 2026-10 la cuenta se mide contra un "Límite semanal Premium", que la
- * propia web lee de GetGrokCreditsConfig por gRPC-Web.
+ * Desde junio de 2026 la cuenta se mide contra un pool semanal compartido —el
+ * "Límite semanal Premium"—, que la propia web lee de GetGrokCreditsConfig por
+ * gRPC-Web. xAI lo anunció como un pool único "entre Chat, Imagine, Build y
+ * otros productos", en reemplazo de los límites diarios por producto.
  *
  * Esquema deducido de dos capturas reales contrastadas con la pantalla de Uso
  * (ver test/fixtures/grok-credits-*.txt):
@@ -18,6 +20,12 @@ const CREDITS_URL = 'https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCredit
  *     campo 1 (float) porcentaje total usado
  *     campo 4 / 5     inicio y fin de la ventana (google.protobuf.Timestamp)
  *     campo 7 (rep.)  desglose por categoría {1: id, 2: porcentaje}
+ *
+ * Exponemos solo el total, a propósito. Las categorías observadas son 4 (Chat)
+ * y 7 (Creador de apps), pero el pool cubre más productos de los que pudimos
+ * ver: nombrar dos y callar el resto daría un desglose que no suma el total.
+ * El porcentaje global es además el único número que xAI publica — no hay
+ * tamaño de pool documentado para ningún plan.
  */
 export const grok = {
   id: 'grok',
