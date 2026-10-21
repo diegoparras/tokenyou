@@ -21,11 +21,15 @@ const CREDITS_URL = 'https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCredit
  *     campo 4 / 5     inicio y fin de la ventana (google.protobuf.Timestamp)
  *     campo 7 (rep.)  desglose por categoría {1: id, 2: porcentaje}
  *
- * Exponemos solo el total, a propósito. Las categorías observadas son 4 (Chat)
- * y 7 (Creador de apps), pero el pool cubre más productos de los que pudimos
- * ver: nombrar dos y callar el resto daría un desglose que no suma el total.
- * El porcentaje global es además el único número que xAI publica — no hay
- * tamaño de pool documentado para ningún plan.
+ * Los ids del desglose son el enum `Product` del propio bundle de Grok:
+ *   1 API · 2 GROK_BUILD · 3 GROK_PLUGINS · 4 GROK_CHAT · 5 GROK_IMAGINE
+ *   6 GROK_VOICE · 7 GROK_APP_BUILDER · 8 GROK_TASKS · 9 GROK_BOT
+ *   10 CURSOR · 11 BUGBOT
+ * Coinciden con lo observado: 4 y 7 son el "Chat 1%" y el "Creador de apps 5%"
+ * que mostraba la pantalla de Uso.
+ *
+ * Aun así exponemos solo el total. Es el número que gobierna la cuenta, y el
+ * único que xAI publica: no hay tamaño de pool documentado para ningún plan.
  */
 export const grok = {
   id: 'grok',
