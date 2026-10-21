@@ -63,7 +63,7 @@
       platformId: 'grok',
       ok: true,
       meters: [
-        { id: 'weekly', label: 'Semanal', usedPct: 90, resetsAt: now + 3 * 24 * H },
+        { id: 'weekly', label: 'Semanal', usedPct: 90, resetsAt: now + 3 * 24 * H, detail: 'Apps 62% · Chat 28%' },
       ],
       fetchedAt: now - 40 * 1000,
     },

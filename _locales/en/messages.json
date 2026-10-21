@@ -20,6 +20,7 @@
   "meterWindowHours": { "message": "$HOURS$ h window", "placeholders": { "hours": { "content": "$1" } } },
   "meterWeek": { "message": "Weekly" },
   "meterMonth": { "message": "Monthly" },
+  "otherProducts": { "message": "other" },
   "meterProSearches": { "message": "Pro searches" },
   "meterResearch": { "message": "Research" },
   "meterLabs": { "message": "Labs" },

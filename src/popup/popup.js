@@ -339,9 +339,9 @@ function meterEl(pid, m, opts, points) {
     box.append(track);
   }
 
-  const notes = [];
-  if (m.detail) notes.push(m.detail);
-  if (m.resetsAt && m.resetsAt > now) notes.push(t('resetsIn', [durationLabel(m.resetsAt - now)]));
+  const resetNote = m.resetsAt && m.resetsAt > now
+    ? t('resetsIn', [durationLabel(m.resetsAt - now)])
+    : null;
 
   // La proyección se pone en palabras solo cuando aprieta; si vas bien, la
   // barra ya lo cuenta y la línea queda tan limpia como antes.
@@ -351,10 +351,22 @@ function meterEl(pid, m, opts, points) {
         : t('forecastReaches', [String(fc.projectedPct)]))
     : null;
 
-  if (notes.length || warning) {
+  // Por orden de utilidad: cuándo reinicia, si no vas a llegar, y recién el
+  // desglose. La línea se recorta a una sola altura, así que lo que se pierde
+  // primero es lo menos accionable; el texto entero queda en el tooltip.
+  const parts = [
+    { text: resetNote, cls: '' },
+    { text: warning, cls: 'fc' },
+    { text: m.detail, cls: '' },
+  ].filter((p) => !!p.text);
+
+  if (parts.length) {
     const line = el('div', 'm-reset');
-    if (notes.length) line.append(document.createTextNode(notes.join(' · ')));
-    if (warning) line.append(el('span', 'fc', notes.length ? ` · ${warning}` : warning));
+    parts.forEach((p, i) => {
+      const text = (i ? ' · ' : '') + p.text;
+      line.append(p.cls ? el('span', p.cls, text) : document.createTextNode(text));
+    });
+    line.title = parts.map((p) => p.text).join(' · ');
     box.append(line);
   }
   return box;

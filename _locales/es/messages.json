@@ -20,6 +20,7 @@
   "meterWindowHours": { "message": "Ventana de $HOURS$ h", "placeholders": { "hours": { "content": "$1" } } },
   "meterWeek": { "message": "Semanal" },
   "meterMonth": { "message": "Mensual" },
+  "otherProducts": { "message": "otros" },
   "meterProSearches": { "message": "Búsquedas Pro" },
   "meterResearch": { "message": "Research" },
   "meterLabs": { "message": "Labs" },

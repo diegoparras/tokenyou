@@ -7,6 +7,21 @@ const t = (/** @type {string} */ key, /** @type {string|undefined} */ arg = unde
 const CREDITS_URL = 'https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig';
 
 /**
+ * Enum `Product` de Grok. Nombres cortos: la línea del desglose es angosta.
+ * @type {Record<number, string>}
+ */
+const PRODUCTS = {
+  1: 'API', 2: 'Build', 3: 'Plugins', 4: 'Chat', 5: 'Imagine',
+  6: 'Voice', 7: 'Apps', 8: 'Tasks', 9: 'Bot', 10: 'Cursor', 11: 'Bugbot',
+};
+/**
+ * Cuántos productos se nombran antes de agrupar el resto en "otros".
+ * Dos: la línea del reinicio también carga el aviso de proyección y el popup
+ * tiene que seguir entrando en un renglón.
+ */
+const MAX_PARTS = 2;
+
+/**
  * Grok dejó de gobernarse por el viejo contador de consultas por ventana
  * (POST /rest/rate-limits, que además responde 404 si se le pasa modelName).
  * Desde junio de 2026 la cuenta se mide contra un pool semanal compartido —el
@@ -70,6 +85,38 @@ export function parseCredits(fields) {
       label: t('meterWeek'),
       usedPct: Math.round(usedPct),
       resetsAt: endsAt ? timestampMs(endsAt) : null,
+      detail: breakdown(config),
     },
   ];
+}
+
+/**
+ * Desglose por producto, p. ej. "Apps 5% · Chat 1%".
+ *
+ * Nombra los de mayor consumo y agrupa el resto —incluidos los ids que no
+ * conocemos— bajo "otros", calculado por suma. Así el desglose cierra contra
+ * el total aunque xAI agregue un producto nuevo. Con un solo producto no
+ * devuelve nada: repetiría el total sin aportar.
+ *
+ * @param {import('../lib/grpcweb.js').Field[]} config
+ * @returns {string|undefined}
+ */
+function breakdown(config) {
+  const parts = config
+    .filter((f) => f.field === 7 && f.value instanceof Uint8Array)
+    .map((f) => decodeFields(/** @type {Uint8Array} */ (f.value)))
+    .map((sub) => ({ id: numberAt(sub, 1), pct: numberAt(sub, 2) ?? 0 }))
+    .filter((p) => p.pct > 0)
+    .sort((a, b) => b.pct - a.pct);
+  if (parts.length < 2) return undefined;
+
+  const named = parts.filter((p) => p.id !== null && PRODUCTS[p.id]);
+  const shown = named.slice(0, MAX_PARTS);
+  const restPct = parts
+    .filter((p) => !shown.includes(p))
+    .reduce((sum, p) => sum + p.pct, 0);
+
+  const bits = shown.map((p) => `${PRODUCTS[/** @type {number} */ (p.id)]} ${Math.round(p.pct)}%`);
+  if (Math.round(restPct) > 0) bits.push(`${t('otherProducts')} ${Math.round(restPct)}%`);
+  return bits.length ? bits.join(' · ') : undefined;
 }

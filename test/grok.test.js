@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { readMessage, decodeFields, timestampMs, numberAt, bytesAt } from '../src/lib/grpcweb.js';
 
-globalThis.chrome = { i18n: { getMessage: (key) => key } };
+// Usamos el catálogo real: así los tests comprueban el texto que se ve.
+const messages = JSON.parse(
+  readFileSync(new URL('../_locales/es/messages.json', import.meta.url), 'utf8'),
+);
+globalThis.chrome = { i18n: { getMessage: (key) => messages[key]?.message ?? key } };
 const { parseCredits } = await import('../src/adapters/grok.js');
 
 /** Carga una respuesta gRPC-Web real capturada del navegador. */
@@ -75,4 +79,54 @@ test('los varint grandes no se desbordan (timestamps de 32+ bits)', () => {
   const config = decodeFields(bytesAt(fixture('grok-credits-1pct'), 1));
   const secs = numberAt(decodeFields(bytesAt(config, 5)), 1);
   assert.equal(secs, 1792885466);
+});
+
+test('el desglose nombra los productos del enum, de mayor a menor', () => {
+  const [m] = parseCredits(fixture('grok-credits-6pct'));
+  assert.equal(m.detail, 'Apps 5% · Chat 1%');
+});
+
+test('con un solo producto no hay desglose: repetiría el total', () => {
+  const [m] = parseCredits(fixture('grok-credits-1pct'));
+  assert.equal(m.detail, undefined);
+});
+
+/* Construcción de payloads a mano, para los casos que no tenemos capturados. */
+const f32 = (n) => {
+  const b = new Uint8Array(4);
+  new DataView(b.buffer).setFloat32(0, n, true);
+  return b;
+};
+const join = (...chunks) => Uint8Array.from(chunks.flatMap((c) => [...c]));
+/** Un desglose {1: id, 2: porcentaje} dentro del campo 7. */
+const part = (id, pct) => {
+  const body = join([0x08, id], [0x15], f32(pct));
+  return join([0x3a, body.length], body);
+};
+/** Mensaje con el total en el campo 1 y sus desgloses. */
+const credits = (total, parts) => [
+  { field: 1, wire: 2, value: join([0x0d], f32(total), ...parts) },
+];
+
+test('nombra los dos mayores y agrupa el resto, sin perder porcentaje', () => {
+  const [m] = parseCredits(credits(30, [
+    part(7, 12), part(4, 8), part(5, 6), part(6, 3), part(1, 1),
+  ]));
+  assert.equal(m.usedPct, 30);
+  assert.equal(m.detail, 'Apps 12% · Chat 8% · otros 10%'); // 6 + 3 + 1 = 10
+  const suma = [...m.detail.matchAll(/(\d+)%/g)].reduce((s, x) => s + Number(x[1]), 0);
+  assert.equal(suma, m.usedPct);
+});
+
+test('un producto que no conocemos cae en "otros" y el desglose sigue cerrando', () => {
+  // 99 no está en el enum: igual no puede desaparecer de la cuenta.
+  const [m] = parseCredits(credits(10, [part(4, 6), part(99, 4)]));
+  assert.equal(m.detail, 'Chat 6% · otros 4%');
+  const suma = [...m.detail.matchAll(/(\d+)%/g)].reduce((s, x) => s + Number(x[1]), 0);
+  assert.equal(suma, m.usedPct, 'el desglose debe sumar el total');
+});
+
+test('los desgloses en cero no ensucian la línea', () => {
+  const [m] = parseCredits(credits(5, [part(4, 5), part(5, 0), part(6, 0)]));
+  assert.equal(m.detail, undefined); // queda un solo producto con consumo
 });
