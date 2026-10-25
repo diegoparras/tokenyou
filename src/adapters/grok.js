@@ -75,15 +75,22 @@ export function parseCredits(fields) {
   if (!configBytes) throw Object.assign(new Error('sin configuración'), { name: 'ParseError' });
 
   const config = decodeFields(configBytes);
-  const usedPct = numberAt(config, 1);
-  if (usedPct === null) throw Object.assign(new Error('sin porcentaje'), { name: 'ParseError' });
-
+  const startsAt = bytesAt(config, 4);
   const endsAt = bytesAt(config, 5);
+  const usedPct = numberAt(config, 1);
+
+  // proto3 no serializa los campos en su valor por defecto: apenas se reinicia
+  // la ventana, el porcentaje deja de venir. Mientras haya ventana la respuesta
+  // es buena y el uso es cero; solo sin nada reconocible es un fallo nuestro.
+  if (usedPct === null && !startsAt && !endsAt) {
+    throw Object.assign(new Error('sin datos de cuota'), { name: 'ParseError' });
+  }
+
   return [
     {
       id: 'weekly',
       label: t('meterWeek'),
-      usedPct: Math.round(usedPct),
+      usedPct: Math.round(usedPct ?? 0),
       resetsAt: endsAt ? timestampMs(endsAt) : null,
       detail: breakdown(config),
     },

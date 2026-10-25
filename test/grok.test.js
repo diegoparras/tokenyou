@@ -130,3 +130,36 @@ test('los desgloses en cero no ensucian la línea', () => {
   const [m] = parseCredits(credits(5, [part(4, 5), part(5, 0), part(6, 0)]));
   assert.equal(m.detail, undefined); // queda un solo producto con consumo
 });
+
+/** Codifica un entero como varint (para construir timestamps a mano). */
+const varint = (n) => {
+  const out = [];
+  while (n > 127) { out.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); }
+  out.push(n);
+  return Uint8Array.from(out);
+};
+/** google.protobuf.Timestamp dentro del campo `field`. */
+const stamp = (field, secs) => {
+  const body = join([0x08], varint(secs));
+  return join([field * 8 + 2, body.length], body);
+};
+
+test('pool recién reiniciado: 0% usado no es un error', () => {
+  // proto3 no serializa los campos en su valor por defecto, así que con el
+  // pool en cero el porcentaje no viene en el mensaje. Hay ventana: la
+  // respuesta es válida y el uso es 0, no "no se pudo leer".
+  const fin = 1793490266;
+  const msg = [{
+    field: 1, wire: 2,
+    value: join(stamp(4, fin - 604800), stamp(5, fin)),
+  }];
+  const [m] = parseCredits(msg);
+  assert.equal(m.usedPct, 0);
+  assert.equal(m.resetsAt, fin * 1000);
+  assert.equal(m.detail, undefined);
+});
+
+test('una respuesta sin nada reconocible sigue siendo un fallo de parseo', () => {
+  assert.throws(() => parseCredits([{ field: 1, wire: 2, value: new Uint8Array(0) }]),
+    { name: 'ParseError' });
+});
