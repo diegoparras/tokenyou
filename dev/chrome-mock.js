@@ -30,7 +30,7 @@
     'snap.claude': {
       platformId: 'claude',
       ok: true,
-      plan: 'Max 20x',
+      plan: 'Ultra',
       meters: [
         { id: 'session', label: 'Sesión (5 h)', usedPct: 33, resetsAt: now + 2 * H + 5 * 60000 },
         { id: 'weekly_all', label: 'Semana · todos los modelos', usedPct: 32, resetsAt: now + 3 * 24 * H },

@@ -78,14 +78,19 @@ export function parseUsage(usage) {
   }
 
   const extra = usage?.extra_usage;
-  if (extra?.is_enabled && typeof extra.utilization === 'number') {
-    meters.push({
-      id: 'extra_usage',
-      label: t('meterExtraUsage'),
-      usedPct: Math.round(extra.utilization),
-      resetsAt: null,
-      detail: moneyDetail(extra),
-    });
+  if (extra?.is_enabled) {
+    // `utilization` puede venir en null aunque haya créditos: en ese caso el
+    // porcentaje sale de lo gastado sobre el tope del mes.
+    const pct = typeof extra.utilization === 'number' ? extra.utilization : pctFromCredits(extra);
+    if (pct !== null) {
+      meters.push({
+        id: 'extra_usage',
+        label: t('meterExtraUsage'),
+        usedPct: Math.round(pct),
+        resetsAt: null,
+        detail: moneyDetail(extra),
+      });
+    }
   }
 
   if (!meters.length) {
@@ -110,6 +115,19 @@ function labelForKind(lim) {
 }
 
 /**
+ * Porcentaje del uso extra a partir de los créditos, para cuando la API no
+ * manda `utilization`.
+ * @param {{used_credits?: number, monthly_limit?: number}} extra
+ * @returns {number|null}
+ */
+function pctFromCredits(extra) {
+  const used = Number(extra.used_credits);
+  const limit = Number(extra.monthly_limit);
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return null;
+  return Math.min(100, (used / limit) * 100);
+}
+
+/**
  * "US$ 21,84 / US$ 100,00" a partir de créditos enteros + decimal_places.
  * @param {{used_credits?: number, monthly_limit?: number, currency?: string, decimal_places?: number}} extra
  * @returns {string|undefined}
@@ -125,9 +143,21 @@ function moneyDetail(extra) {
   return `${fmt.format(used)} · ${t('moneyLeft', fmt.format(left))}`;
 }
 
-/** "default_claude_max_20x" → "Max 20x" @param {string=} tier */
-function planFromTier(tier) {
+/**
+ * Nombres comerciales que no se deducen del identificador. Anthropic renombró
+ * los planes el 2026-10-30 —Max 20x pasó a Ultra y Max 5x a Max— sin tocar los
+ * tiers internos, así que hay que traducirlos a mano.
+ * @type {Record<string, string>}
+ */
+const PLAN_NAMES = {
+  default_claude_max_20x: 'Ultra',
+  default_claude_max_5x: 'Max',
+};
+
+/** "default_claude_max_20x" → "Ultra" @param {string=} tier */
+export function planFromTier(tier) {
   if (!tier) return undefined;
+  if (PLAN_NAMES[tier]) return PLAN_NAMES[tier];
   const short = tier.replace(/^default_claude_/, '').replace(/_/g, ' ');
   return short.charAt(0).toUpperCase() + short.slice(1);
 }

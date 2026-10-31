@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 globalThis.chrome = {
   i18n: { getMessage: (key, args) => (args && args.length ? `${key}:${args[0]}` : key) },
 };
-const { parseUsage } = await import('../src/adapters/claude.js');
+const { parseUsage, planFromTier } = await import('../src/adapters/claude.js');
 
 const fixture = (name) =>
   JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'));
@@ -85,4 +85,52 @@ test('ignora límites sin porcentaje en vez de romper', () => {
     ],
   });
   assert.equal(meters.length, 1);
+});
+
+/* Captura real de una cuenta Ultra (2026-10-31), tras el renombre de planes. */
+
+test('cuenta Ultra: arma los tres medidores de límite', () => {
+  const meters = parseUsage(fixture('claude-usage-ultra'));
+  const limites = meters.filter((m) => m.id !== 'extra_usage');
+  assert.deepEqual(limites.map((m) => m.usedPct), [6, 2, 0]);
+  assert.deepEqual(limites.map((m) => m.label), ['meterSession', 'meterWeekAll', 'meterWeekModel:Fable']);
+});
+
+test('el uso extra se muestra aunque la API no mande utilization', () => {
+  // La cuenta Ultra trae utilization en null pero sí los créditos: 0 de 10000.
+  const extra = parseUsage(fixture('claude-usage-ultra')).find((m) => m.id === 'extra_usage');
+  assert.ok(extra, 'el uso extra no puede desaparecer por un campo en null');
+  assert.equal(extra.usedPct, 0);
+  assert.match(extra.detail, /100[.,]00/); // el tope del mes sigue informándose
+});
+
+test('el uso extra calcula el porcentaje a partir de los créditos', () => {
+  const [, extra] = parseUsage({
+    limits: [{ kind: 'session', percent: 10, resets_at: null }],
+    extra_usage: {
+      is_enabled: true, utilization: null,
+      used_credits: 2500, monthly_limit: 10000, currency: 'USD', decimal_places: 2,
+    },
+  });
+  assert.equal(extra.usedPct, 25); // 25.00 de 100.00 USD
+});
+
+test('sin créditos ni utilization, el uso extra no inventa un número', () => {
+  const meters = parseUsage({
+    limits: [{ kind: 'session', percent: 10, resets_at: null }],
+    extra_usage: { is_enabled: true, utilization: null },
+  });
+  assert.equal(meters.length, 1);
+});
+
+test('traduce los tiers renombrados a su nombre comercial', () => {
+  // Anthropic renombró los planes el 2026-10-30 sin tocar los identificadores.
+  assert.equal(planFromTier('default_claude_max_20x'), 'Ultra');
+  assert.equal(planFromTier('default_claude_max_5x'), 'Max');
+});
+
+test('un tier que no conocemos se muestra legible, no crudo', () => {
+  assert.equal(planFromTier('default_claude_pro'), 'Pro');
+  assert.equal(planFromTier('default_claude_team_premium'), 'Team premium');
+  assert.equal(planFromTier(undefined), undefined);
 });
