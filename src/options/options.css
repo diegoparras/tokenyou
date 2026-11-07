@@ -133,3 +133,7 @@ h1 { font-size: 20px; margin: 0; }
 }
 #result.ok { border-left: 3px solid var(--ok); }
 #result.err { border-left: 3px solid var(--crit); }
+
+/* sección "Tus datos": exportar e borrar historial */
+.btn.danger:hover { border-color: color-mix(in srgb, var(--crit) 55%, var(--line)); color: var(--crit); background: color-mix(in srgb, var(--crit) 8%, var(--surface)); }
+.stats { color: var(--ink-3); font-size: 12.5px; margin: 4px 0 0; font-variant-numeric: tabular-nums; }

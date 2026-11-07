@@ -6,7 +6,7 @@ import {
   getHiddenPlatforms, setPlatformHidden, unpinPlatform,
   getPins, togglePin, getCollapsed, toggleCollapsed, getOrder, setOrder, MAX_PINS,
 } from '../lib/prefs.js';
-import { getSeries } from '../lib/history.js';
+import { getSeries, FINE_RETAIN_MS } from '../lib/history.js';
 import { forecast } from '../lib/forecast.js';
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
@@ -21,6 +21,8 @@ const pcolor = (/** @type {string} */ id) =>
   PLATFORM_COLORS[/** @type {keyof typeof PLATFORM_COLORS} */ (id)] ?? '#7B8A96';
 /** @param {number} pct */
 const stateOf = (pct) => (pct >= 85 ? 'crit' : pct >= 60 ? 'warn' : 'ok');
+/** El estado en palabras, para los lectores de pantalla. @param {number} pct */
+const stateLabel = (pct) => t('state' + stateOf(pct).replace(/^./, (c) => c.toUpperCase()));
 /** Umbral a partir del cual la proyección se dice con palabras, no solo con la barra. */
 const FORECAST_WARN_PCT = 85;
 
@@ -302,8 +304,12 @@ function meterEl(pid, m, opts, points) {
 
   row.append(el('span', 'm-label', m.label));
 
-  if (typeof m.usedPct === 'number' && points && points.length >= 3) {
-    row.append(sparkEl(points.map((p) => p.v), stateOf(m.usedPct)));
+  // El sparkline es de las últimas 24 h. La serie guardada llega más atrás
+  // —la proyección la necesita— pero dibujar un mes en 40 px, y encima con
+  // resolución mixta, diría otra cosa de la que el gráfico promete.
+  if (typeof m.usedPct === 'number' && points) {
+    const recent = points.filter((p) => p.t >= now - FINE_RETAIN_MS);
+    if (recent.length >= 3) row.append(sparkEl(recent.map((p) => p.v), stateOf(m.usedPct)));
   }
   const val =
     m.usedPct !== null && m.usedPct !== undefined ? `${m.usedPct}%`
@@ -315,6 +321,14 @@ function meterEl(pid, m, opts, points) {
 
   if (typeof m.usedPct === 'number') {
     const track = el('div', 'track');
+    // Sin rol, un div con un ancho en % no le dice nada a un lector de
+    // pantalla. Con rol y etiqueta, el estado se lee en palabras.
+    const pct = Math.round(m.usedPct);
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-valuenow', String(pct));
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', '100');
+    track.setAttribute('aria-label', t('meterAria', [m.label, String(pct), stateLabel(m.usedPct)]));
     const fill = el('div', 'fill st-' + stateOf(m.usedPct));
     const target = `${Math.min(100, m.usedPct)}%`;
     if (firstPaint) { fill.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = target; })); }

@@ -2,16 +2,64 @@
 // Persistencia del historial de uso, eficiente en storage.local.
 //
 // Por cada medidor con porcentaje guardamos dos cosas, en claves separadas:
-//  - Serie de puntos {t, v} de las últimas 24 h → alimenta los sparklines.
+//  - Serie de puntos {t, v} → alimenta los sparklines y la proyección.
 //  - Buckets de actividad por hora epoch → alimentan el heatmap. La "actividad"
 //    es el consumo real (delta positivo de %); los resets (delta negativo) se
 //    ignoran, así una ventana que se reinicia no cuenta como uso.
+//
+// La serie usa dos resoluciones. Las últimas 24 h se guardan tal cual, porque
+// el sparkline las dibuja. Más atrás se pliega a un punto por hora: alcanza
+// para proyectar una ventana semanal o mensual sin que la serie crezca sin
+// techo. Sin esto, proyectar el límite semanal de Claude significaba extrapolar
+// siete días desde un día de datos.
 
 const PTS = (/** @type {string} */ id) => `hist.pts.${id}`;
 const ACT = (/** @type {string} */ id) => `hist.act.${id}`;
 
-const POINTS_RETAIN_MS = 24 * 3600 * 1000;      // 24 h de puntos para el sparkline
-const ACT_RETAIN_MS = 31 * 24 * 3600 * 1000;    // 31 días de buckets para el heatmap
+const H = 3600 * 1000;
+export const FINE_RETAIN_MS = 24 * H;           // resolución completa (sparkline)
+export const POINTS_RETAIN_MS = 31 * 24 * H;    // retención total de la serie
+const ACT_RETAIN_MS = 31 * 24 * H;              // 31 días de buckets para el heatmap
+
+/**
+ * Recorta y pliega una serie: fina en las últimas 24 h, una muestra por hora
+ * más atrás, nada más viejo que la retención.
+ *
+ * Al plegar una hora se conserva su **último** punto, no el primero ni un
+ * promedio: la serie es un nivel acumulado, así que el último valor es el que
+ * describe el estado del medidor al cerrar esa hora. Promediar borraría los
+ * resets, y forecast.js los necesita para recortar la serie al tramo vigente.
+ *
+ * @param {{t:number,v:number}[]|null|undefined} points
+ * @param {number} now
+ * @returns {{t:number,v:number}[]}
+ */
+export function compactPoints(points, now) {
+  if (!Array.isArray(points)) return [];
+  const cutoff = now - POINTS_RETAIN_MS;
+  const fineFrom = now - FINE_RETAIN_MS;
+
+  const valid = points
+    .filter((p) => p && Number.isFinite(p.t) && Number.isFinite(p.v) && p.t >= cutoff)
+    .sort((a, b) => a.t - b.t);
+
+  /** @type {{t:number,v:number}[]} */
+  const out = [];
+  /** @type {number|null} */
+  let lastHour = null;
+  for (const p of valid) {
+    if (p.t >= fineFrom) {
+      out.push(p);
+      continue;
+    }
+    const hour = Math.floor(p.t / H);
+    // Dentro de la misma hora, el punto nuevo reemplaza al anterior.
+    if (hour === lastHour) out[out.length - 1] = p;
+    else out.push(p);
+    lastHour = hour;
+  }
+  return out;
+}
 
 /** `${platformId}/${meterId}` para los medidores con % de un snapshot. */
 function meterIds(/** @type {import('./quota.js').Snapshot} */ snap) {
@@ -40,8 +88,9 @@ export async function recordSnapshot(snap) {
     const prev = pts.length ? pts[pts.length - 1] : null;
 
     pts.push({ t: now, v: Math.round(pct) });
-    const cutoff = now - POINTS_RETAIN_MS;
-    updates[PTS(id)] = pts.filter((/** @type {{t:number}} */ p) => p && p.t >= cutoff);
+    // Plegar en cada escritura es idempotente: la zona ya plegada se mantiene
+    // y la fina se va comprimiendo sola a medida que envejece.
+    updates[PTS(id)] = compactPoints(pts, now);
 
     // Actividad = consumo positivo desde el punto anterior.
     if (prev && typeof prev.v === 'number') {

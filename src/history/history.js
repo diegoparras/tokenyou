@@ -1,6 +1,7 @@
 // @ts-check
 import { getAllAdapters } from '../adapters/index.js';
-import { getActivity } from '../lib/history.js';
+import { getActivity, getSeries } from '../lib/history.js';
+import { paceComparison } from '../lib/trend.js';
 import { weekGrid, monthGrid } from '../lib/heatmap.js';
 
 const t = (/** @type {string} */ key, /** @type {string[]|undefined} */ args = undefined) =>
@@ -16,6 +17,7 @@ const $sel = /** @type {HTMLSelectElement} */ (document.getElementById('meter-se
 const $heat = /** @type {HTMLElement} */ (document.getElementById('heat'));
 const $cols = /** @type {HTMLElement} */ (document.getElementById('cols'));
 const $peak = /** @type {HTMLElement} */ (document.getElementById('peak'));
+const $pace = /** @type {HTMLElement} */ (document.getElementById('pace'));
 const $totals = /** @type {HTMLElement} */ (document.getElementById('totals'));
 const $empty = /** @type {HTMLElement} */ (document.getElementById('empty'));
 const $heatWrap = /** @type {HTMLElement} */ (document.getElementById('heat-wrap'));
@@ -136,6 +138,8 @@ async function draw() {
     $peak.hidden = true;
   }
 
+  await drawPace(key, now);
+
   // Totales
   $totals.replaceChildren(
     tot(t('totalConsumed'), `${grid.total}`),
@@ -168,4 +172,29 @@ function tot(k, v) {
 function setText(id, text) {
   const node = document.getElementById(id);
   if (node) node.textContent = text;
+}
+
+/**
+ * Ritmo contra la ventana anterior, a la misma altura. Es la única lectura que
+ * contesta "¿estoy consumiendo más que la vuelta pasada?"; el heatmap muestra
+ * cuándo usás, no si te estás acelerando.
+ * @param {string} key `${platformId}/${meterId}`
+ * @param {number} now
+ */
+async function drawPace(key, now) {
+  const series = await getSeries([key]);
+  const pace = paceComparison(series[key] ?? [], now);
+  if (!pace) {
+    $pace.hidden = true;
+    return;
+  }
+  const abs = Math.abs(pace.changePct);
+  const text =
+    abs < 5 ? t('paceSame')
+      : pace.changePct > 0 ? t('paceFaster', [String(abs)])
+        : t('paceSlower', [String(abs)]);
+  $pace.hidden = false;
+  $pace.className = 'pace ' + (abs < 5 ? 'same' : pace.changePct > 0 ? 'up' : 'down');
+  $pace.textContent = text;
+  $pace.title = t('paceDetail', [String(pace.currentConsumed), String(pace.previousConsumed)]);
 }

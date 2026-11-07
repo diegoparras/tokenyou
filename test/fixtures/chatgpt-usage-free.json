@@ -1,0 +1,12 @@
+{
+  "plan_type": "free",
+  "email": "persona@example.com",
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 41.7,
+      "limit_window_seconds": 2592000,
+      "reset_at": 1764547200
+    },
+    "secondary_window": null
+  }
+}

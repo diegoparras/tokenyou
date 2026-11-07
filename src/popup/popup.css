@@ -204,3 +204,20 @@ section { padding: 8px 16px; }
 footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding: 11px 16px 13px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
 footer a { color: var(--ink-3); text-decoration: none; transition: color 0.15s; }
 footer a:hover { color: var(--accent); }
+
+/* --- El color no puede ser el único canal ------------------------------
+   Con deuteranopia (≈8 % de los varones) el ámbar y el verde se parecen
+   bastante, así que el estado viaja además por textura: la barra pasa de lisa
+   a rayada a medida que se acerca al límite. Sumado a las marcas de 60 % y 85 %
+   del riel y al rol ARIA del track, el estado queda legible por color,
+   patrón, posición y texto. */
+.fill.st-warn {
+  background-image:
+    repeating-linear-gradient(135deg, rgba(0,0,0,.14) 0 2px, transparent 2px 6px),
+    linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,0));
+}
+.fill.st-crit {
+  background-image:
+    repeating-linear-gradient(135deg, rgba(0,0,0,.22) 0 3px, transparent 3px 6px),
+    linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,0));
+}

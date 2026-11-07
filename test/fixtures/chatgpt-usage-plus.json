@@ -1,0 +1,16 @@
+{
+  "plan_type": "plus",
+  "email": "persona@example.com",
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 11.2,
+      "limit_window_seconds": 18000,
+      "reset_at": 1762000000
+    },
+    "secondary_window": {
+      "used_percent": 2.4,
+      "limit_window_seconds": 604800,
+      "reset_at": 1762400000
+    }
+  }
+}

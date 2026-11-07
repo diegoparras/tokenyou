@@ -11,6 +11,8 @@ import {
   getHiddenPlatforms, setPlatformHidden, unpinPlatform,
 } from '../lib/prefs.js';
 import { getAllAdapters } from '../adapters/index.js';
+import { collectHistory, toJson, toCsv, fileStem } from '../lib/export.js';
+import { clearHistory } from '../lib/history.js';
 
 const PLATFORM_COLORS = {
   claude: '#D97757', chatgpt: '#10A37F', gemini: '#4E8CF9', grok: '#8A93A6',
@@ -53,6 +55,7 @@ async function init() {
 
   await initPlatforms();
   await initNotifications();
+  await initData();
 
   const services = await getCustomServices();
   $editor.value = JSON.stringify(services, null, 2);
@@ -162,10 +165,12 @@ async function initNotifications() {
   setText('notif-enable-lbl', t('notifEnable'));
   setText('notif-reset-lbl', t('notifOnReset'));
   setText('notif-th-lbl', t('notifOnThreshold'));
+  setText('notif-fc-lbl', t('notifOnForecast'));
 
   const $enable = /** @type {HTMLInputElement} */ (document.getElementById('notif-enable'));
   const $reset = /** @type {HTMLInputElement} */ (document.getElementById('notif-reset'));
   const $th = /** @type {HTMLInputElement} */ (document.getElementById('notif-th'));
+  const $fc = /** @type {HTMLInputElement} */ (document.getElementById('notif-fc'));
   const $opts = document.getElementById('notif-opts');
 
   const granted = await chrome.permissions.contains({ permissions: ['notifications'] });
@@ -173,6 +178,7 @@ async function initNotifications() {
   $enable.checked = granted;
   $reset.checked = prefs.reset;
   $th.checked = prefs.threshold !== null;
+  $fc.checked = prefs.forecast;
   $opts?.classList.toggle('off', !granted);
 
   $enable.addEventListener('change', async () => {
@@ -181,19 +187,84 @@ async function initNotifications() {
       if (!ok) { $enable.checked = false; return; }
       $reset.checked = true;
       $th.checked = true;
-      await setNotifyPrefs({ reset: true, threshold: 85 });
+      $fc.checked = true;
+      await setNotifyPrefs({ reset: true, threshold: 85, forecast: true });
       $opts?.classList.remove('off');
     } else {
       await chrome.permissions.remove({ permissions: ['notifications'] });
-      await setNotifyPrefs({ reset: false, threshold: null });
+      await setNotifyPrefs({ reset: false, threshold: null, forecast: false });
       $reset.checked = false;
       $th.checked = false;
+      $fc.checked = false;
       $opts?.classList.add('off');
     }
   });
-  const save = () => setNotifyPrefs({ reset: $reset.checked, threshold: $th.checked ? 85 : null });
+  const save = () => setNotifyPrefs({
+    reset: $reset.checked,
+    threshold: $th.checked ? 85 : null,
+    forecast: $fc.checked,
+  });
   $reset.addEventListener('change', save);
   $th.addEventListener('change', save);
+  $fc.addEventListener('change', save);
+}
+
+/**
+ * Sección "Tus datos": exportar el historial o borrarlo.
+ *
+ * La descarga se arma con un Blob y un <a download>, no con chrome.downloads:
+ * así la función no cuesta un permiso nuevo, que es justamente el argumento
+ * del producto.
+ */
+async function initData() {
+  setText('data-title', t('dataTitle'));
+  setText('data-intro', t('dataIntro'));
+  setText('export-json', t('exportJson'));
+  setText('export-csv', t('exportCsv'));
+  setText('clear-hist', t('clearHistoryBtn'));
+  await renderDataStats();
+
+  document.getElementById('export-json')?.addEventListener('click', async () => {
+    const store = await chrome.storage.local.get(null);
+    const version = chrome.runtime.getManifest().version;
+    download(`${fileStem()}.json`, toJson(store, { version }), 'application/json');
+  });
+
+  document.getElementById('export-csv')?.addEventListener('click', async () => {
+    const store = await chrome.storage.local.get(null);
+    download(`${fileStem()}.csv`, toCsv(store), 'text/csv');
+  });
+
+  document.getElementById('clear-hist')?.addEventListener('click', async () => {
+    if (!confirm(t('clearHistoryAsk'))) return;
+    await clearHistory();
+    await renderDataStats();
+    showResult('ok', t('clearHistoryDone'));
+  });
+}
+
+/** Cuánto historial hay guardado, para que borrar no sea a ciegas. */
+async function renderDataStats() {
+  const store = await chrome.storage.local.get(null);
+  const meters = Object.values(collectHistory(store));
+  const points = meters.reduce((sum, m) => sum + m.points.length, 0);
+  setText(
+    'data-stats',
+    points
+      ? chrome.i18n.getMessage('dataStats', [String(meters.length), String(points)])
+      : t('dataStatsEmpty'),
+  );
+}
+
+/** @param {string} name @param {string} text @param {string} type */
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  // Liberar el objeto en el próximo tick: revocarlo ya mismo cancela la descarga.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 /**

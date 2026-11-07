@@ -43,7 +43,7 @@
       platformId: 'chatgpt',
       ok: true,
       plan: 'Plus',
-      account: 'diegoparras@gmail.com',
+      account: 'persona@example.com',
       meters: [
         { id: 'primary', label: 'Ventana de 5 h', usedPct: 11, resetsAt: now + 4 * H },
         { id: 'secondary', label: 'Semanal', usedPct: 2, resetsAt: now + 6.9 * 24 * H },
@@ -112,7 +112,7 @@
       fetchedAt: now - 40 * 1000,
     },
     'prefs.hiddenMeters': [],
-    'prefs.notify': { reset: true, threshold: 85 },
+    'prefs.notify': { reset: true, threshold: 85, forecast: true },
     'prefs.pins': ['claude/session', 'chatgpt/primary', 'grok/weekly'],
     'prefs.collapsed': ['gemini', 'grok', 'perplexity', 'custom-cursor', 'abacus'],
     'prefs.order': [],
@@ -152,12 +152,26 @@
     }
     return out;
   };
+  // Serie de dos ventanas completas: alimenta la comparación de ritmo del
+  // historial, que necesita una ventana anterior con la que comparar.
+  const mkTwoWindows = (end, prevPeak, windowDays) => {
+    const span = windowDays * 24 * H;
+    const start = now - 2 * span;
+    const cur = start + span;
+    const out = [];
+    for (let t = start; t < cur; t += H) out.push({ t, v: Math.round((prevPeak * (t - start)) / span) });
+    for (let t = cur; t < now - 24 * H; t += H) out.push({ t, v: Math.round((end * (t - cur)) / (now - cur)) });
+    for (let t = now - 24 * H; t < now; t += 30 * 60000) out.push({ t, v: Math.round((end * (t - cur)) / (now - cur)) });
+    out.push({ t: now, v: end });
+    return out;
+  };
+
   store['hist.pts.claude/session'] = mkSeries(33);
-  store['hist.pts.claude/weekly_all'] = mkSeries(32);
+  store['hist.pts.claude/weekly_all'] = mkTwoWindows(32, 55, 3.5);
   store['hist.pts.claude/weekly_scoped'] = mkSeries(64);
   store['hist.pts.claude/extra_usage'] = mkSeries(22);
   store['hist.pts.chatgpt/primary'] = mkSeries(11);
-  store['hist.pts.chatgpt/secondary'] = mkSeries(2);
+  store['hist.pts.chatgpt/secondary'] = mkTwoWindows(2, 9, 3.5);
   store['hist.pts.gemini/session'] = mkSeries(0);
   store['hist.pts.gemini/weekly'] = mkSeries(1);
   store['hist.pts.grok/weekly'] = mkSeries(90);
@@ -200,6 +214,7 @@
 
   window.chrome = {
     i18n: {
+      getUILanguage() { return lang === 'en' ? 'en-US' : 'es-AR'; },
       // Reproduce el algoritmo real: $NOMBRE$ en el mensaje → placeholders[nombre].content ($1..$9 → args)
       getMessage(key, args) {
         const entry = messages[key];
@@ -255,6 +270,7 @@
       async sendMessage() { return { ok: true }; },
       openOptionsPage() { window.open('/src/options/options.html', '_blank'); },
       getURL(p) { return '/' + p.replace(/^\//, ''); },
+      getManifest() { return { version: '0.4.0' }; },
     },
   };
 })();

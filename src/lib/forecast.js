@@ -8,7 +8,7 @@
 // preferible no mostrar nada a mostrar una proyección inventada.
 
 const MIN_POINTS = 3;
-const RESET_DROP = 2;                        // caída de % que leemos como reinicio de ventana
+export const RESET_DROP = 2;                        // caída de % que leemos como reinicio de ventana
 const SHORT_HORIZON_MS = 12 * 3600 * 1000;
 const MIN_SPAN_SHORT_MS = 45 * 60 * 1000;    // ventana corta (5 h): con 45 min de datos alcanza
 const MIN_SPAN_LONG_MS = 6 * 3600 * 1000;    // ventana larga (semanal/mensual): pedimos 6 h
@@ -101,4 +101,29 @@ export function forecast(points, opts) {
     ratePerHour: rate * 3600 * 1000,
     exhaustsAt: exhaustsAt === null ? null : Math.round(exhaustsAt),
   };
+}
+
+const WARN_MARGIN_PCT = 105;          // margen sobre 100: por debajo es empate técnico
+const MIN_LEAD_MS = 10 * 60 * 1000;   // un aviso con menos margen que esto llega tarde
+
+/**
+ * Proyección que merece una notificación, o null.
+ *
+ * Es más exigente que `forecast` a propósito. Un aviso que se dispara por ruido
+ * de redondeo se apaga a la semana, así que acá pedimos tres cosas: que la
+ * proyección cruce el 100% con holgura (no por decimales), que el agotamiento
+ * caiga antes del reinicio, y que falte tiempo suficiente para que avisar sirva
+ * de algo. Un medidor que ya está al límite no entra: de eso avisa el umbral.
+ *
+ * @param {Point[]} points
+ * @param {{ usedPct: number, resetsAt: number|null|undefined, now?: number }} opts
+ * @returns {Forecast|null}
+ */
+export function exhaustionWarning(points, opts) {
+  const now = opts.now ?? Date.now();
+  const fc = forecast(points, opts);
+  if (!fc || fc.exhaustsAt === null) return null;
+  if (fc.projectedPct < WARN_MARGIN_PCT) return null;
+  if (fc.exhaustsAt - now < MIN_LEAD_MS) return null;
+  return fc;
 }

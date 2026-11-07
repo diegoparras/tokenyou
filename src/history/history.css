@@ -58,3 +58,11 @@ main { max-width: 720px; margin: 0 auto; padding: 12px 24px 60px; }
 .tot .v { font-size: 19px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
 
 .empty { text-align: center; color: var(--ink-2); font-size: 14px; padding: 40px 20px; }
+
+/* Ritmo contra la ventana anterior. El color es semántico acá: ir más rápido
+   que la vuelta pasada es la noticia mala. */
+.pace { font-size: 13px; margin: 2px 0 14px; padding: 9px 13px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); max-width: 62ch; }
+.pace.up { border-left: 3px solid var(--crit); }
+.pace.down { border-left: 3px solid var(--ok); }
+.pace.same { border-left: 3px solid var(--ink-3); }

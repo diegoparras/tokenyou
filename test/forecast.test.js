@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { forecast, currentRun } from '../src/lib/forecast.js';
+import { forecast, currentRun, exhaustionWarning } from '../src/lib/forecast.js';
 
 const H = 3600 * 1000;
 const MIN = 60 * 1000;
@@ -112,4 +112,49 @@ test('tolera minutos, no solo horas, en el span mínimo', () => {
   ];
   const fc = forecast(pts, { usedPct: 20, resetsAt: NOW + H, now: NOW });
   assert.ok(fc, 'con 50 min de datos y ventana corta debería proyectar');
+});
+
+// --- Aviso de agotamiento -----------------------------------------------
+// Decide si una proyección merece una notificación. El riesgo acá es el falso
+// positivo: avisar "se te agota" por ruido de redondeo quema la confianza en
+// el aviso y el usuario lo apaga.
+
+test('aviso: proyección que pasa 100 con holgura y margen de tiempo', () => {
+  // 8 %/h sostenido, 84 % ahora y 6 h hasta el reinicio: proyecta 132 % y se
+  // agota a las dos horas. Caso de libro.
+  const pts = [at(8, 20), at(6, 36), at(4, 52), at(2, 68)];
+  const w = exhaustionWarning(pts, { usedPct: 84, resetsAt: NOW + 6 * H, now: NOW });
+  assert.ok(w, 'debería avisar');
+  assert.ok(w.exhaustsAt > NOW + MIN, 'el agotamiento es futuro');
+  assert.ok(w.exhaustsAt < NOW + 6 * H, 'y cae antes del reinicio');
+});
+
+test('aviso: un 101% proyectado es empate técnico, no se avisa', () => {
+  // Pendiente mínima: cruza el 100 por decimales. Avisar acá sería ruido.
+  const pts = [at(8, 96), at(6, 96), at(4, 97), at(2, 97)];
+  const w = exhaustionWarning(pts, { usedPct: 97, resetsAt: NOW + 6 * H, now: NOW });
+  assert.equal(w, null);
+});
+
+test('aviso: si la proyección no llega a 100 no hay nada que avisar', () => {
+  const pts = [at(8, 10), at(6, 14), at(4, 18), at(2, 22)];
+  assert.equal(exhaustionWarning(pts, { usedPct: 26, resetsAt: NOW + 4 * H, now: NOW }), null);
+});
+
+test('aviso: un medidor ya agotado no genera aviso de proyección', () => {
+  // Ya está al 100: el aviso de umbral es el que corresponde, no este.
+  const pts = [at(8, 70), at(6, 80), at(4, 90), at(2, 97)];
+  assert.equal(exhaustionWarning(pts, { usedPct: 100, resetsAt: NOW + 4 * H, now: NOW }), null);
+});
+
+test('aviso: sin proyección posible no hay aviso', () => {
+  assert.equal(exhaustionWarning([], { usedPct: 50, resetsAt: NOW + 4 * H, now: NOW }), null);
+  assert.equal(exhaustionWarning([at(2, 10)], { usedPct: 50, resetsAt: null, now: NOW }), null);
+});
+
+test('aviso: un agotamiento inminente no se avisa, llega tarde', () => {
+  // Se agota en pocos minutos: el aviso no le sirve a nadie.
+  const pts = [at(8, 30), at(6, 50), at(4, 70), at(2, 90)];
+  const w = exhaustionWarning(pts, { usedPct: 99.5, resetsAt: NOW + 4 * H, now: NOW });
+  assert.equal(w, null);
 });

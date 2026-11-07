@@ -63,7 +63,7 @@ export const gemini = {
  * @param {string} raw
  * @returns {import('../lib/quota.js').Meter[]}
  */
-function parseUsage(raw) {
+export function parseUsage(raw) {
   const line = raw.split('\n').find((l) => l.includes('"wrb.fr"') && l.includes('jSf9Qc'));
   if (!line) return [];
   let payload;

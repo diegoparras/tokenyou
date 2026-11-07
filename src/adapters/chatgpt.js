@@ -28,39 +28,51 @@ export const chatgpt = {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    /** @type {import('../lib/quota.js').Meter[]} */
-    const meters = [];
-    for (const [id, win] of [
-      ['primary', usage?.rate_limit?.primary_window],
-      ['secondary', usage?.rate_limit?.secondary_window],
-    ]) {
-      if (typeof win?.used_percent !== 'number') continue;
-      const seconds = win.limit_window_seconds;
-      const label =
-        Number.isFinite(seconds) && seconds >= 26 * 24 * 3600
-          ? t('meterMonth')
-          : Number.isFinite(seconds) && seconds >= 6 * 24 * 3600
-            ? t('meterWeek')
-            : t('meterWindowHours', String(Math.round((seconds ?? 18000) / 3600)));
-      meters.push({
-        id: String(id),
-        label,
-        usedPct: Math.round(win.used_percent),
-        resetsAt: Number.isFinite(win.reset_at) ? win.reset_at * 1000 : null,
-      });
-    }
-    if (!meters.length) throw Object.assign(new Error('no meters'), { name: 'ParseError' });
-
     return {
       platformId: 'chatgpt',
       ok: true,
-      plan: prettyPlan(usage?.plan_type),
-      account: typeof usage?.email === 'string' ? usage.email : undefined,
-      meters,
+      ...parseUsage(usage),
       fetchedAt: Date.now(),
     };
   },
 };
+
+/**
+ * Medidores, plan y cuenta a partir de la respuesta de /wham/usage.
+ * Separada de la red para poder testearla contra una respuesta capturada.
+ * @param {any} usage
+ * @returns {{plan: string|undefined, account: string|undefined, meters: import('../lib/quota.js').Meter[]}}
+ */
+export function parseUsage(usage) {
+  /** @type {import('../lib/quota.js').Meter[]} */
+  const meters = [];
+  for (const [id, win] of [
+    ['primary', usage?.rate_limit?.primary_window],
+    ['secondary', usage?.rate_limit?.secondary_window],
+  ]) {
+    if (typeof win?.used_percent !== 'number') continue;
+    const seconds = win.limit_window_seconds;
+    const label =
+      Number.isFinite(seconds) && seconds >= 26 * 24 * 3600
+        ? t('meterMonth')
+        : Number.isFinite(seconds) && seconds >= 6 * 24 * 3600
+          ? t('meterWeek')
+          : t('meterWindowHours', String(Math.round((seconds ?? 18000) / 3600)));
+    meters.push({
+      id: String(id),
+      label,
+      usedPct: Math.round(win.used_percent),
+      resetsAt: Number.isFinite(win.reset_at) ? win.reset_at * 1000 : null,
+    });
+  }
+  if (!meters.length) throw Object.assign(new Error('no meters'), { name: 'ParseError' });
+
+  return {
+    plan: prettyPlan(usage?.plan_type),
+    account: typeof usage?.email === 'string' ? usage.email : undefined,
+    meters,
+  };
+}
 
 /** @param {string=} plan */
 function prettyPlan(plan) {
