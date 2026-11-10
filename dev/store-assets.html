@@ -29,8 +29,8 @@
   .pts .t { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); font-weight:800; flex:none; }
   .stage { flex:none; position:relative; z-index:2; }
   /* el popup real, embebido como imagen (fiel al producto) */
-  .popframe { width:360px; height:600px; border-radius:18px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
-  .popframe img { width:360px; display:block; }
+  .popframe { width:380px; height:600px; border-radius:18px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
+  .popframe img { width:380px; display:block; }
 
   /* ---- popup nuevo (anillos + pins + color de estado) ---- */
   .mock { width:364px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:0 0 14px; font-size:13px; }
@@ -94,6 +94,9 @@
   .sc.a .bar u { background:color-mix(in srgb,var(--warn) 26%,transparent); } .sc.a .bar u::after { background:var(--warn); }
   .sc .note { font-family:var(--mono); font-size:13.5px; color:var(--ink2); margin-top:12px; }
   .sc .note b { color:var(--ink); font-weight:700; }
+  /* el estado no viaja solo por color: la barra se raya al acercarse al límite */
+  .sc.a .bar i { background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.16) 0 3px,transparent 3px 8px),linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .sc.r .bar i { background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.24) 0 4px,transparent 4px 8px),linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
   .sc.g .rg { color:var(--ok); } .sc.g i { background-color:var(--ok); width:38%; }
   .sc.a .rg { color:var(--warn); } .sc.a i { background-color:var(--warn); width:72%; }
   .sc.r .rg { color:var(--crit); } .sc.r i { background-color:var(--crit); width:93%; }
@@ -119,7 +122,7 @@
   <div class="copy">
     <div class="eyebrow">Extensión · Open source · MIT</div>
     <h2>Todos tus límites de IA, <em>en un solo lugar</em></h2>
-    <p>Claude, ChatGPT, Gemini, Grok y Perplexity. Fijá lo que te importa, signos vitales de color y un aviso antes de chocar con el límite.</p>
+    <p>Claude, ChatGPT, Gemini, Grok, Perplexity, Copilot y Abacus. Fijá lo que te importa, signos vitales de color y un aviso antes de chocar con el límite.</p>
   </div>
   <div class="stage" id="stage1"></div>
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
@@ -137,6 +140,7 @@
       <li><span class="t">✓</span>0 telemetría, analytics o servidores</li>
       <li><span class="t">✓</span>Permiso por plataforma, revocable</li>
       <li><span class="t">✓</span>MIT + build reproducible verificable</li>
+      <li><span class="t">✓</span>Tu historial es tuyo: exportalo o borralo</li>
     </ul>
   </div>
   <div class="stage" id="stage2"></div>
@@ -156,7 +160,7 @@
       <div class="pcard" style="--pc:#D97757"><h3><i></i>Claude</h3><p>Sesión, semanal, uso extra. Incluye Claude Code.</p></div>
       <div class="pcard" style="--pc:#10A37F"><h3><i></i>ChatGPT</h3><p>Ventana de 5 h y tope semanal, con plan.</p></div>
       <div class="pcard" style="--pc:#4E8CF9"><h3><i></i>Gemini</h3><p>Cómputo actual y semanal, dato real.</p></div>
-      <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Consultas restantes por ventana.</p></div>
+      <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Pool semanal de créditos, por producto.</p></div>
       <div class="pcard" style="--pc:#26B8CE"><h3><i></i>Perplexity</h3><p>Pro, Research, Labs y agénticas.</p></div>
       <div class="pcard" style="--pc:#6E40C9"><h3><i></i>Copilot · Abacus</h3><p>Premium requests y puntos de cómputo.</p></div>
     </div>
@@ -170,7 +174,7 @@
   <div class="copy">
     <div class="eyebrow">De un vistazo</div>
     <h2>Verde, ámbar, <em>rojo.</em></h2>
-    <p>Cada card habla un solo color según su estado: borde, fondo y barras. El punto identifica la plataforma.</p>
+    <p>Cada card habla un solo color según su estado. Y como el color solo no le alcanza a todo el mundo, la barra además se raya al acercarse al límite.</p>
   </div>
   <div class="stage">
     <div class="scale">
@@ -189,7 +193,7 @@
   <div class="copy">
     <div class="eyebrow">Antes de chocar</div>
     <h2>¿Te alcanza hasta <em>el reinicio?</em></h2>
-    <p>Cada medidor proyecta, en la misma barra, a dónde vas a llegar al ritmo que venís. Y si no llegás, te dice cuánto te queda.</p>
+    <p>Cada medidor proyecta, en la misma barra, a dónde vas a llegar al ritmo que venís. Y si no llegás, te avisa antes — sin que tengas que abrir nada.</p>
   </div>
   <div class="stage">
     <div class="scale">

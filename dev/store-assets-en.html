@@ -29,8 +29,8 @@
   .pts .t { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); font-weight:800; flex:none; }
   .stage { flex:none; position:relative; z-index:2; }
   /* el popup real, embebido como imagen (fiel al producto) */
-  .popframe { width:360px; height:600px; border-radius:18px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
-  .popframe img { width:360px; display:block; }
+  .popframe { width:380px; height:600px; border-radius:18px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55); border:1px solid var(--line); }
+  .popframe img { width:380px; display:block; }
 
   /* ---- popup nuevo (anillos + pins + color de estado) ---- */
   .mock { width:364px; background:var(--bg2); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.5); padding:0 0 14px; font-size:13px; }
@@ -94,6 +94,9 @@
   .sc.a .bar u { background:color-mix(in srgb,var(--warn) 26%,transparent); } .sc.a .bar u::after { background:var(--warn); }
   .sc .note { font-family:var(--mono); font-size:13.5px; color:var(--ink2); margin-top:12px; }
   .sc .note b { color:var(--ink); font-weight:700; }
+  /* state does not travel by colour alone: the bar goes striped near the limit */
+  .sc.a .bar i { background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.16) 0 3px,transparent 3px 8px),linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
+  .sc.r .bar i { background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.24) 0 4px,transparent 4px 8px),linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,0)); }
   .sc.g .rg { color:var(--ok); } .sc.g i { background-color:var(--ok); width:38%; }
   .sc.a .rg { color:var(--warn); } .sc.a i { background-color:var(--warn); width:72%; }
   .sc.r .rg { color:var(--crit); } .sc.r i { background-color:var(--crit); width:93%; }
@@ -119,7 +122,7 @@
   <div class="copy">
     <div class="eyebrow">Extension · Open source · MIT</div>
     <h2>All your AI limits, <em>in one place</em></h2>
-    <p>Claude, ChatGPT, Gemini, Grok and Perplexity. Pin what matters, color vital signs, and a warning before you hit the limit.</p>
+    <p>Claude, ChatGPT, Gemini, Grok, Perplexity, Copilot and Abacus. Pin what matters, color vital signs, and a warning before you hit the limit.</p>
   </div>
   <div class="stage" id="stage1"></div>
   <div class="wm"><b>●</b> TokenYou — getescriba.com/tokenyou</div>
@@ -137,6 +140,7 @@
       <li><span class="t">✓</span>0 telemetry, analytics or servers</li>
       <li><span class="t">✓</span>Per-platform permission, revocable</li>
       <li><span class="t">✓</span>MIT + verifiable reproducible build</li>
+      <li><span class="t">✓</span>Your history is yours: export it or wipe it</li>
     </ul>
   </div>
   <div class="stage" id="stage2"></div>
@@ -156,7 +160,7 @@
       <div class="pcard" style="--pc:#D97757"><h3><i></i>Claude</h3><p>Session, weekly, extra usage. Includes Claude Code.</p></div>
       <div class="pcard" style="--pc:#10A37F"><h3><i></i>ChatGPT</h3><p>5 h window and weekly cap, with plan.</p></div>
       <div class="pcard" style="--pc:#4E8CF9"><h3><i></i>Gemini</h3><p>Current and weekly compute, real data.</p></div>
-      <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Remaining queries per window.</p></div>
+      <div class="pcard" style="--pc:#8A93A6"><h3><i></i>Grok</h3><p>Weekly credit pool, by product.</p></div>
       <div class="pcard" style="--pc:#26B8CE"><h3><i></i>Perplexity</h3><p>Pro, Research, Labs and agentic.</p></div>
       <div class="pcard" style="--pc:#6E40C9"><h3><i></i>Copilot · Abacus</h3><p>Premium requests and compute points.</p></div>
     </div>
@@ -170,7 +174,7 @@
   <div class="copy">
     <div class="eyebrow">At a glance</div>
     <h2>Green, amber, <em>red.</em></h2>
-    <p>Each card speaks one color for its state: border, background and bars. The dot identifies the platform.</p>
+    <p>Each card speaks one color for its state. And because color alone doesn't work for everyone, the bar also goes striped as it nears the limit.</p>
   </div>
   <div class="stage">
     <div class="scale">
@@ -189,7 +193,7 @@
   <div class="copy">
     <div class="eyebrow">Before you hit it</div>
     <h2>Will it last <em>until the reset?</em></h2>
-    <p>Every meter projects, in the bar it already has, where you land at your current pace. And if you won't make it, it tells you how long you have.</p>
+    <p>Every meter projects, in the bar it already has, where you land at your current pace. And if you won't make it, it warns you first — without you opening anything.</p>
   </div>
   <div class="stage">
     <div class="scale">
